@@ -8,7 +8,7 @@ import kotlin.test.Test
 class ParserTest {
     @Test
     fun testProblems() {
-        for (i in 1..59) {
+        for (i in 1..PROBLEM_LAST_INDEX) {
             val json = File("problems/$i.problem").readText()
             if (json.isEmpty()) continue
             println("$i.problem")
