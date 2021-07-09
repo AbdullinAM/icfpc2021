@@ -4,10 +4,11 @@ import org.junit.jupiter.api.Test
 import ru.spbstu.icpfc2021.model.Pose
 import ru.spbstu.icpfc2021.model.Problem
 import ru.spbstu.icpfc2021.model.Verifier
+import ru.spbstu.icpfc2021.model.Verifier.Status.OK
+import ru.spbstu.icpfc2021.model.Verifier.Status.OVERLAP
 import ru.spbstu.icpfc2021.model.readValue
 import java.io.File
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 class VerifierTest {
 
@@ -19,9 +20,9 @@ class VerifierTest {
 
             val problem = readValue<Problem>(jsonP)
 
-            val verifier = Verifier(problem.hole)
+            val verifier = Verifier(problem)
 
-            assertFalse(verifier.check(problem.figure), "Oops: $i.problem")
+            assertEquals(OVERLAP, verifier.check(problem.figure), "Oops: $i.problem")
 
             val solutionFile = File("solutions/$i.sol")
             if (!solutionFile.exists()) continue
@@ -32,7 +33,7 @@ class VerifierTest {
             val solution = readValue<Pose>(jsonS)
             val solutionFigure = problem.figure.copy(vertices = solution.vertices)
 
-            assertTrue(verifier.check(solutionFigure), "Oops: $i.sol")
+            assertEquals(OK, verifier.check(solutionFigure), "Oops: $i.sol")
         }
     }
 

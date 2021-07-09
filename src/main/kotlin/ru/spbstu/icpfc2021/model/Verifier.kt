@@ -3,23 +3,29 @@ package ru.spbstu.icpfc2021.model
 import java.awt.Polygon
 import java.awt.geom.Area
 
-class Verifier(val hole: Hole) {
+class Verifier(val problem: Problem) {
 
-    val awtHole by lazy {
-        hole.toArea()
+    enum class Status {
+        OVERLAP, EDGE_VIOLATION, OK
     }
 
-    fun check(figure: Figure): Boolean {
+    val awtHole by lazy {
+        problem.hole.toArea()
+    }
+
+    fun check(figure: Figure): Status {
         val awtFigure = figure.vertices.toArea()
 
         awtFigure.subtract(awtHole)
 
-        return awtFigure.isEmpty
+        return when {
+            !awtFigure.isEmpty -> Status.OVERLAP
+            !checkCorrect(problem.figure, figure, problem.epsilon) -> Status.EDGE_VIOLATION
+            else -> Status.OK
+        }
     }
 
 }
-
-fun Polygon.contains(p: Point): Boolean = contains(p.x, p.y)
 
 fun List<Point>.toArea(): Area {
     val poly = Polygon()
