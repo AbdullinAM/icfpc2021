@@ -29,6 +29,21 @@ class Verifier(val problem: Problem) {
         return !awtHole.contains(p.x * 100.0, p.y * 100.0)
     }
 
+    fun getHolePoints(): List<Point> {
+        val xRange = (problem.hole.minByOrNull { it.x }?.x ?: 0)..(problem.hole.maxByOrNull { it.x }?.x ?: 0)
+        val yRange = (problem.hole.minByOrNull { it.y }?.y ?: 0)..(problem.hole.maxByOrNull { it.y }?.y ?: 0)
+        val result = mutableListOf<Point>()
+        for (i in xRange) {
+            for (j in yRange) {
+                val pt = Point(i, j)
+                if (!isOutOfBounds(pt)) {
+                    result += pt
+                }
+            }
+        }
+        return result
+    }
+
 }
 
 fun List<Point>.toArea(): Area {

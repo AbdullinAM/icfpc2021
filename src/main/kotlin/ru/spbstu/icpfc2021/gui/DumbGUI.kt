@@ -301,6 +301,8 @@ fun drawFigure(problem: Problem) {
     val (hole, startingFigure) = problem
 
     val verifier = Verifier(problem)
+    val holePoints = verifier.getHolePoints()
+    var validPoints = emptyList<Point>()
 
     val figureStack = stack<Figure>()
     figureStack.push(startingFigure)
@@ -335,6 +337,12 @@ fun drawFigure(problem: Problem) {
             val color = if (verifier.isOutOfBounds(point)) Color.RED else Color.BLUE
             withPaint(color) {
                 fill(Ellipse2D(point, 2.0))
+            }
+        }
+
+        for (point in validPoints) {
+            withPaint(Color.GREEN) {
+                fill(Ellipse2D(point, 1.5))
             }
         }
 
@@ -431,7 +439,36 @@ fun drawFigure(problem: Problem) {
         val end = e.canvasPoint
         canvas.translate(end.x - st.x, end.y - st.y)
     }
-    canvas.onMousePan(filter = { SwingUtilities.isLeftMouseButton(it) }) { start, prev, e ->
+    var startingPoint: IndexedValue<Point>? = null
+    var startFigure: Figure? = null
+    canvas.onMousePan(
+        filter = { SwingUtilities.isLeftMouseButton(it) },
+        destructor = { _, _ ->
+            startingPoint = null
+            startFigure = null
+            validPoints = emptyList()
+            canvas.invokeRepaint()
+        }
+    ) { start, prev, e ->
+        val startPoint = (startFigure ?: figure).vertices.withIndex().minByOrNull { (_, v) -> v.distance(start.canvasPoint) }
+        if (startPoint == null) return@onMousePan
+        if (startingPoint == null || startingPoint != startPoint) {
+            startingPoint = startPoint
+            startFigure = figure
+            val pointEdges = startFigure!!.edges.filter { it.startIndex == startPoint.index || it.endIndex == startPoint.index }
+            validPoints = holePoints.filter {
+                val newFigure = figure.copy(vertices = figure.vertices.toMutableList().apply {
+                    this[startPoint.index] = it
+                })
+
+                pointEdges.all { dataEdge ->
+                    val oldEdge = Edge(problem.figure.vertices[dataEdge.startIndex], problem.figure.vertices[dataEdge.endIndex])
+                    val newEdge = Edge(newFigure.vertices[dataEdge.startIndex], newFigure.vertices[dataEdge.endIndex])
+
+                    checkCorrect(oldEdge, newEdge, problem.epsilon)
+                }
+            }
+        }
         val stt = figure.vertices.withIndex().minByOrNull { (_, v) -> v.distance(prev.canvasPoint) }
         if (stt == null) return@onMousePan
         if (prev.canvasPoint.round() == e.canvasPoint.round()) return@onMousePan
