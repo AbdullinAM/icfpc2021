@@ -8,17 +8,15 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    maven {
-        url = uri("https://maven.vorpal-research.science")
-    }
+    maven { setUrl("https://maven.vorpal-research.science") }
 }
 
 dependencies {
     implementation(kotlin("stdlib"))
+    implementation("ru.spbstu:jackson-module-ktuples:0.0.0.6")
     implementation("ru.spbstu:kotlin-wheels-jvm:0.0.1.3")
-
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12")
+    testImplementation(kotlin("test"))
 }
 
 tasks.getByName<Test>("test") {
