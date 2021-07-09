@@ -1,9 +1,7 @@
 package ru.spbstu.icpfc2021.gui
 
-import ru.spbstu.icpfc2021.model.Axis
+import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.model.Point
-import ru.spbstu.icpfc2021.model.Problem
-import ru.spbstu.icpfc2021.model.toJsonString
 import java.awt.*
 import java.awt.event.ActionEvent
 import java.awt.event.MouseAdapter
@@ -286,10 +284,29 @@ fun drawFigure(problem: Problem) {
         }
 
         val graphEdges = figure.calculatedEdges
-        withPaint(Color.RED) {
-            for (edge in graphEdges) {
+
+        for ((edge, oldEdge) in graphEdges.zip(startingFigure.calculatedEdges)) {
+            val color = when {
+                checkCorrect(oldEdge, edge, problem.epsilon) -> Color.BLUE
+                else -> Color.RED
+            }
+            withPaint(color) {
                 val line = Line2D.Double(edge.start, edge.end)
                 draw(Drawable.Shape(BasicStroke(0.2f).createStrokedShape(line)))
+            }
+        }
+
+        for (point in figure.vertices) {
+            withPaint(Color.BLUE) {
+                fill(Ellipse2D(point, 2.0))
+            }
+        }
+
+        absolute {
+            withPaint(Color.ORANGE) {
+                withFont(Font.decode("Fira-Mono-Bold-20")) {
+                    drawString("dislikes: ${dislikes(hole, figure.currentPose)}", 20.0f, 20.0f)
+                }
             }
         }
     }

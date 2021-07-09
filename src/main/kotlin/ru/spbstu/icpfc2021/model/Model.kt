@@ -63,6 +63,9 @@ data class Figure(
         Axis.X -> copy(vertices = vertices.map { Point(it.x, -it.y) })
         Axis.Y -> copy(vertices = vertices.map { Point(-it.x, it.y) })
     }
+
+    @get:JsonIgnore
+    val currentPose get() = Pose(vertices)
 }
 
 data class Problem(
