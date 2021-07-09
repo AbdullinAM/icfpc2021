@@ -1,10 +1,9 @@
 package ru.spbstu.icpfc2021
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import ru.spbstu.icpfc2021.model.Problem
-import kotlin.test.*
 import ru.spbstu.icpfc2021.model.readValue
 import java.io.File
+import kotlin.test.Test
 
 class ParserTest {
     @Test

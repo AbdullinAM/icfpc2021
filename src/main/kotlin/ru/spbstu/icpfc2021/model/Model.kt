@@ -2,10 +2,9 @@ package ru.spbstu.icpfc2021.model
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.databind.ObjectMapper
-import ru.spbstu.ktuples.Tuple2
-import ru.spbstu.ktuples.jackson.registerKTuplesModule
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import ru.spbstu.ktuples.jackson.registerKTuplesModule
 import java.io.File
 import java.io.InputStream
 import java.io.Writer

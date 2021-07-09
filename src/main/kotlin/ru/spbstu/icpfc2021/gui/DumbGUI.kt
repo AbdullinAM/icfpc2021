@@ -1,5 +1,7 @@
 package ru.spbstu.icpfc2021.gui
 
+import ru.spbstu.icpfc2021.model.Point
+import ru.spbstu.icpfc2021.model.Problem
 import java.awt.*
 import java.awt.event.ActionEvent
 import java.awt.event.MouseAdapter
@@ -280,6 +282,8 @@ fun drawFigure(holeVertices: List<Point2D>, graphEdges: List<Pair<Point2D, Point
             }
         }
     }
+    canvas.scale(10.0)
+    canvas.translate(20.0, 20.0)
     canvas.onKey("DOWN") {
         val ty = 20.0 / canvas.transform.scaleY
         canvas.translate(0.0, ty)
@@ -308,8 +312,23 @@ fun drawFigure(holeVertices: List<Point2D>, graphEdges: List<Pair<Point2D, Point
         val scale = 1.0 - rot * 0.1
         canvas.zoomTo(point, scale)
     }
-    canvas.scale(2.5, 2.5)
+    canvas.onMousePan(filter = { SwingUtilities.isRightMouseButton(it) }) { _, prev, e ->
+        val st = prev.canvasPoint
+        val end = e.canvasPoint
+        canvas.translate(end.x - st.x, end.y - st.y)
+    }
     dumbFrame(canvas).defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+}
+
+
+fun Point.to2D() = Point2D(x.toDouble(), y.toDouble())
+
+fun drawProblem(problem: Problem) {
+    val (hole, figure) = problem
+    drawFigure(
+        hole.map { it.to2D() },
+        figure.edges.map { figure.vertices[it.startIndex].to2D() to figure.vertices[it.endIndex].to2D() }
+    )
 }
 
 fun testHole(): List<Point2D> =
