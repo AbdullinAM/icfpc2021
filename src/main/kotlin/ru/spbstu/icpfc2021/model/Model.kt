@@ -1,6 +1,7 @@
 package ru.spbstu.icpfc2021.model
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -17,7 +18,7 @@ data class Point(
     val x: Int, val y: Int
 ): Point2D() {
     operator fun plus(other: Point) = Point(x + other.x, y + other.y)
-    fun rotate90() = Point(y, x)
+    fun rotate90() = Point(y, -x)
 
     override fun getX(): kotlin.Double = x.toDouble()
     override fun getY(): kotlin.Double = y.toDouble()
@@ -53,13 +54,14 @@ data class Figure(
     val vertices: List<Point>,
     val edges: List<DataEdge>
 ) {
+    @get:JsonIgnore
     val calculatedEdges by lazy { edges.map { Edge(vertices[it.startIndex], vertices[it.endIndex]) }}
 
     fun moveAll(dp: Point) = copy(vertices = vertices.map { it + dp })
     fun rotate90() = copy(vertices = vertices.map { it.rotate90() })
     fun mirror(axis: Axis) = when(axis) {
-        Axis.X -> vertices.map { Point(it.x, -it.y) }
-        Axis.Y -> vertices.map { Point(-it.x, it.y) }
+        Axis.X -> copy(vertices = vertices.map { Point(it.x, -it.y) })
+        Axis.Y -> copy(vertices = vertices.map { Point(-it.x, it.y) })
     }
 }
 

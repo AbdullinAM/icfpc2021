@@ -1,7 +1,9 @@
 package ru.spbstu.icpfc2021.gui
 
+import ru.spbstu.icpfc2021.model.Axis
 import ru.spbstu.icpfc2021.model.Point
 import ru.spbstu.icpfc2021.model.Problem
+import ru.spbstu.icpfc2021.model.toJsonString
 import java.awt.*
 import java.awt.event.ActionEvent
 import java.awt.event.MouseAdapter
@@ -271,9 +273,9 @@ fun Graphics2D.drawLine(start: Point2D, end: Point2D) =
     drawLine(start.x.toInt(), start.y.toInt(), end.x.toInt(), end.y.toInt())
 
 fun drawFigure(problem: Problem) {
-    val (hole, figure) = problem
+    val (hole, startingFigure) = problem
+    var figure = startingFigure
     val holeVertices = hole.map { it.to2D() }
-    val graphEdges = figure.calculatedEdges
     val canvas = dumbCanvas {
         withPaint(Color.GRAY.brighter().brighter()) {
             val hole = GeneralPath()
@@ -283,6 +285,7 @@ fun drawFigure(problem: Problem) {
             fill(hole)
         }
 
+        val graphEdges = figure.calculatedEdges
         withPaint(Color.RED) {
             for (edge in graphEdges) {
                 val line = Line2D.Double(edge.start, edge.end)
@@ -307,6 +310,33 @@ fun drawFigure(problem: Problem) {
     canvas.onKey("RIGHT") {
         val tx = 20.0 / canvas.transform.scaleX
         canvas.translate(tx, 0.0)
+    }
+    canvas.onKey("F") {
+        println(figure.toJsonString())
+    }
+    canvas.onKey("R") {
+        figure = figure.rotate90()
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("M") {
+        figure = figure.mirror(Axis.X)
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("W") {
+        figure = figure.moveAll(Point(0, -1))
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("S") {
+        figure =  figure.moveAll(Point(0, 1))
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("A") {
+        figure = figure.moveAll(Point(-1, 0))
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("D") {
+        figure = figure.moveAll(Point(1, 0))
+        canvas.invokeRepaint()
     }
     canvas.onKey(KeyStroke.getKeyStroke('+', 0)) {
         canvas.scale(1.1)
