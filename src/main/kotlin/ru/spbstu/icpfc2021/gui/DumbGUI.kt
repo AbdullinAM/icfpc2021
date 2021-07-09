@@ -355,7 +355,7 @@ fun drawFigure(problem: Problem) {
         absolute {
             withPaint(Color.ORANGE) {
                 withFont(Font.decode("Fira-Mono-Bold-20")) {
-                    drawString("dislikes: ${dislikes(hole, figure.currentPose)}", 20.0f, 20.0f)
+                    drawString("dislikes: ${dislikes(hole, figure.currentPose)}", 20.0f, 30.0f)
                     if (currentCoordinates != null) {
                         drawString("current coordinates: x=${currentCoordinates!!.x}, y=${currentCoordinates!!.y}", 20.0f, 40.0f)
                     }
@@ -486,7 +486,7 @@ fun drawFigure(problem: Problem) {
 
                     checkCorrect(oldEdge, newEdge, problem.epsilon)
                 }
-                if (countCorrect > 1) {
+                if (countCorrect >= 1) {
                     validPoints[it] = countCorrect.toDouble() / pointEdges.size
                 }
             }
