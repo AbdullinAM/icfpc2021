@@ -270,7 +270,10 @@ fun GeneralPath.lineTo(point: Point2D) = lineTo(point.x, point.y)
 fun Graphics2D.drawLine(start: Point2D, end: Point2D) =
     drawLine(start.x.toInt(), start.y.toInt(), end.x.toInt(), end.y.toInt())
 
-fun drawFigure(holeVertices: List<Point2D>, graphEdges: List<Pair<Point2D, Point2D>>) {
+fun drawFigure(problem: Problem) {
+    val (hole, figure) = problem
+    val holeVertices = hole.map { it.to2D() }
+    val graphEdges = figure.calculatedEdges
     val canvas = dumbCanvas {
         withPaint(Color.GRAY.brighter().brighter()) {
             val hole = GeneralPath()
@@ -282,7 +285,7 @@ fun drawFigure(holeVertices: List<Point2D>, graphEdges: List<Pair<Point2D, Point
 
         withPaint(Color.RED) {
             for (edge in graphEdges) {
-                val line = Line2D.Double(edge.first, edge.second)
+                val line = Line2D.Double(edge.start, edge.end)
                 draw(Drawable.Shape(BasicStroke(0.2f).createStrokedShape(line)))
             }
         }
@@ -328,13 +331,6 @@ fun drawFigure(holeVertices: List<Point2D>, graphEdges: List<Pair<Point2D, Point
 
 fun Point.to2D() = Point2D(x.toDouble(), y.toDouble())
 
-fun drawProblem(problem: Problem) {
-    val (hole, figure) = problem
-    drawFigure(
-        hole.map { it.to2D() },
-        figure.edges.map { figure.vertices[it.startIndex].to2D() to figure.vertices[it.endIndex].to2D() }
-    )
-}
 
 fun testHole(): List<Point2D> =
     """
@@ -360,7 +356,3 @@ fun testFigure(): List<Pair<Point2D, Point2D>> {
     return edges.map { vertices[it.first] to vertices[it.second] }
 }
 
-
-fun main() {
-    drawFigure(testHole(), testFigure())
-}

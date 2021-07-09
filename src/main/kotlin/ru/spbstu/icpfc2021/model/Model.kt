@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import ru.spbstu.ktuples.jackson.registerKTuplesModule
 import ru.spbstu.ktuples.zip
+import java.awt.geom.Point2D
 import java.io.File
 import java.io.InputStream
 import java.io.Writer
@@ -14,8 +15,16 @@ import kotlin.math.abs
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class Point(
     val x: Int, val y: Int
-) {
+): Point2D() {
     operator fun plus(other: Point) = Point(x + other.x, y + other.y)
+    fun rotate90() = Point(y, x)
+
+    override fun getX(): kotlin.Double = x.toDouble()
+    override fun getY(): kotlin.Double = y.toDouble()
+
+    override fun setLocation(p0: kotlin.Double, p1: kotlin.Double) {
+        TODO("Not yet implemented")
+    }
 }
 
 fun Int.sqr() = this.toLong() * this.toLong()
@@ -38,6 +47,8 @@ fun checkCorrect(from: Figure, to: Figure, epsilon: Int) =
 
 typealias Hole = List<Point>
 
+enum class Axis { X, Y}
+
 data class Figure(
     val vertices: List<Point>,
     val edges: List<DataEdge>
@@ -45,6 +56,11 @@ data class Figure(
     val calculatedEdges by lazy { edges.map { Edge(vertices[it.startIndex], vertices[it.endIndex]) }}
 
     fun moveAll(dp: Point) = copy(vertices = vertices.map { it + dp })
+    fun rotate90() = copy(vertices = vertices.map { it.rotate90() })
+    fun mirror(axis: Axis) = when(axis) {
+        Axis.X -> vertices.map { Point(it.x, -it.y) }
+        Axis.Y -> vertices.map { Point(-it.x, it.y) }
+    }
 }
 
 data class Problem(

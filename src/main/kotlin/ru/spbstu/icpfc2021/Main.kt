@@ -1,6 +1,6 @@
 package ru.spbstu.icpfc2021
 
-import ru.spbstu.icpfc2021.gui.drawProblem
+import ru.spbstu.icpfc2021.gui.drawFigure
 import ru.spbstu.icpfc2021.model.Problem
 import ru.spbstu.icpfc2021.model.readValue
 import java.io.File
@@ -11,5 +11,5 @@ fun main(args: Array<String>) {
     println("$index.problem")
     val problem = readValue<Problem>(json)
     println(problem)
-    drawProblem(problem)
+    drawFigure(problem)
 }
