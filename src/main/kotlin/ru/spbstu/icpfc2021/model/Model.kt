@@ -11,6 +11,7 @@ import java.awt.geom.Point2D
 import java.io.File
 import java.io.InputStream
 import java.io.Writer
+import java.math.BigInteger
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class Point(
@@ -40,6 +41,10 @@ data class Edge(val start: Point, val end: Point) {
     val squaredLength get() = start.squaredDistance(end)
 }
 
+private val million = BigInteger.valueOf(1_000_000)
+val Long.big get() = BigInteger.valueOf(this)
+val Int.big get() = BigInteger.valueOf(this.toLong())
+
 fun checkCorrect(from: Edge, to: Edge, epsilon: Int): Boolean {
     val f = from.squaredLength
     val t = to.squaredLength
@@ -47,10 +52,10 @@ fun checkCorrect(from: Edge, to: Edge, epsilon: Int): Boolean {
         t == 0L -> false
         f == t -> true
         f > t -> {
-            1_000_000.0 * f - 1_000_000.0 * t <= epsilon * f
+            million * f.big - million * t.big <= epsilon.big * f.big
         }
         else -> {
-            1_000_000.0 * t - 1_000_000.0 * f <= epsilon * f
+            million * t.big - million * f.big <= epsilon.big * f.big
         }
     }
 }
