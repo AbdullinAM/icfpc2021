@@ -362,6 +362,12 @@ fun drawFigure(problem: Problem) {
             canvas.invokeRepaint()
         }
     }
+    canvas.onKey("control R") {
+        while (figureStack.size > 1) {
+            figureStack.pop()
+        }
+        canvas.invokeRepaint()
+    }
     canvas.onKey("R") {
         figureStack.push(figure.rotate90())
         canvas.invokeRepaint()
