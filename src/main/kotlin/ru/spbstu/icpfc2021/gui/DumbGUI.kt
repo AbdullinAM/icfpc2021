@@ -312,6 +312,7 @@ fun drawFigure(problem: Problem) {
         setter = { figureStack.push(it) }
     )
     val holeVertices = hole.map { it.to2D() }
+    var currentCoordinates: Point? = null
     val canvas = dumbCanvas {
         withPaint(Color.GRAY.brighter().brighter()) {
             val hole2D = GeneralPath()
@@ -351,6 +352,9 @@ fun drawFigure(problem: Problem) {
             withPaint(Color.ORANGE) {
                 withFont(Font.decode("Fira-Mono-Bold-20")) {
                     drawString("dislikes: ${dislikes(hole, figure.currentPose)}", 20.0f, 20.0f)
+                    if (currentCoordinates != null) {
+                        drawString("current coordinates: x=${currentCoordinates!!.x}, y=${currentCoordinates!!.y}", 20.0f, 40.0f)
+                    }
                 }
             }
         }
@@ -451,6 +455,7 @@ fun drawFigure(problem: Problem) {
         destructor = { _, _ ->
             startingPoint = null
             startFigure = null
+            currentCoordinates = null
             validPoints = emptyList()
             canvas.invokeRepaint()
         }
@@ -476,6 +481,7 @@ fun drawFigure(problem: Problem) {
         }
         val stt = figure.vertices.withIndex().minByOrNull { (_, v) -> v.distance(prev.canvasPoint) }
         if (stt == null) return@onMousePan
+        currentCoordinates = stt.value
         if (prev.canvasPoint.round() == e.canvasPoint.round()) return@onMousePan
         val (ix, _) = stt
 
