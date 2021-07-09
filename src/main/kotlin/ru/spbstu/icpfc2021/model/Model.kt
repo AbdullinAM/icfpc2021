@@ -5,26 +5,43 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import ru.spbstu.ktuples.jackson.registerKTuplesModule
+import ru.spbstu.ktuples.zip
 import java.io.File
 import java.io.InputStream
 import java.io.Writer
+import kotlin.math.abs
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class Point(
     val x: Int, val y: Int
 )
 
+fun Int.sqr() = this * this
+
+fun Point.squaredDistance(other: Point) = (x - other.x).sqr() + (y - other.y).sqr()
+
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
-data class Edge(
+data class DataEdge(
     val startIndex: Int, val endIndex: Int
 )
+
+data class Edge(val start: Point, val end: Point) {
+    val squaredLength get() = start.squaredDistance(end)
+}
+
+fun checkCorrect(from: Edge, to: Edge, epsilon: Int) =
+    abs(from.squaredLength / to.squaredLength - 1) <= epsilon / 1_000_000.0
+fun checkCorrect(from: Figure, to: Figure, epsilon: Int) =
+    zip(from.calculatedEdges, to.calculatedEdges).all { (a, b) -> checkCorrect(a, b, epsilon) }
 
 typealias Hole = List<Point>
 
 data class Figure(
     val vertices: List<Point>,
-    val edges: List<Edge>
-)
+    val edges: List<DataEdge>
+) {
+    val calculatedEdges by lazy { edges.map { Edge(vertices[it.startIndex], vertices[it.endIndex]) }}
+}
 
 data class Problem(
     val hole: Hole,
