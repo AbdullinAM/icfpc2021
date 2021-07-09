@@ -281,7 +281,7 @@ fun Point2D.round() = Point(x.roundToInt(), y.roundToInt())
 data class GetterAndSetterForLocalPropertyBitch<T>(
     val getter: () -> T,
     val setter: (T) -> Unit
-): ReadWriteProperty<Any?, T> {
+) : ReadWriteProperty<Any?, T> {
     override fun getValue(thisRef: Any?, property: KProperty<*>): T = getter()
     override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) = setter(value)
 }
@@ -415,6 +415,10 @@ fun drawFigure(problem: Problem) {
         figureStack.push(figure.mirror(Axis.X))
         canvas.invokeRepaint()
     }
+    canvas.onKey("N") {
+        figureStack.push(figure.mirror(Axis.Y))
+        canvas.invokeRepaint()
+    }
     canvas.onKey("W") {
         figureStack.push(figure.moveAll(Point(0, -1)))
         canvas.invokeRepaint()
@@ -486,7 +490,8 @@ fun drawFigure(problem: Problem) {
         val (ix, _) = stt
 
         figure = figure.copy(vertices = figure.vertices.toMutableList().apply {
-            this[ix] = e.canvasPoint.round() })
+            this[ix] = e.canvasPoint.round()
+        })
         canvas.invokeRepaint()
 
     }

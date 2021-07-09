@@ -16,6 +16,7 @@ dependencies {
     implementation("ru.spbstu:jackson-module-ktuples:0.0.0.6")
     implementation("ru.spbstu:kotlin-wheels-jvm:0.0.1.3")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.1")
     testImplementation(kotlin("test"))
 }
 
