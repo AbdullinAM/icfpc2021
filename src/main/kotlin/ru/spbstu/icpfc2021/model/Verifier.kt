@@ -15,7 +15,7 @@ class Verifier(val problem: Problem) {
         problem.hole.toPoly()
     }
 
-    val holeVertixes by lazy {
+    val holeVertexes by lazy {
         problem.hole.toSet()
     }
 
@@ -33,7 +33,7 @@ class Verifier(val problem: Problem) {
     }
 
     fun isOutOfBounds(p: Point): Boolean {
-        if (p in holeVertixes) return false
+        if (p in holeVertexes) return false
 
         return !awtHole.contains(p.x, p.y)
     }
