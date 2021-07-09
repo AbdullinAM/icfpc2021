@@ -92,6 +92,10 @@ fun dumbFrame(title: String = "", width: Int = 800, height: Int = 600, draw: Gra
 abstract class TransformablePanel : JPanel() {
     abstract val transform: AffineTransform
 
+    init {
+        background = Color.GRAY.darker().darker()
+    }
+
     fun scale(scaleX: Double, scaleY: Double = scaleX) {
         SwingUtilities.invokeLater {
             transform.scale(scaleX, scaleY)
@@ -268,7 +272,7 @@ fun Graphics2D.drawLine(start: Point2D, end: Point2D) =
 
 fun drawFigure(holeVertices: List<Point2D>, graphEdges: List<Pair<Point2D, Point2D>>) {
     val canvas = dumbCanvas {
-        withPaint(Color.GRAY.darker()) {
+        withPaint(Color.GRAY.brighter().brighter()) {
             val hole = GeneralPath()
             hole.moveTo(holeVertices.first())
             for (point in holeVertices.drop(1)) hole.lineTo(point)
@@ -278,7 +282,8 @@ fun drawFigure(holeVertices: List<Point2D>, graphEdges: List<Pair<Point2D, Point
 
         withPaint(Color.RED) {
             for (edge in graphEdges) {
-                drawLine(edge.first, edge.second)
+                val line = Line2D.Double(edge.first, edge.second)
+                draw(Drawable.Shape(BasicStroke(0.2f).createStrokedShape(line)))
             }
         }
     }
