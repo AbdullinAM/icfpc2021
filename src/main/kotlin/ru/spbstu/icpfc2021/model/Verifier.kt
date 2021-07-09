@@ -15,6 +15,10 @@ class Verifier(val problem: Problem) {
         problem.hole.toPoly()
     }
 
+    val holeVertixes by lazy {
+        problem.hole.toSet()
+    }
+
     fun check(figure: Figure): Status {
         for (edge in figure.calculatedEdges) {
             val awtLine = Line2D.Double(edge.start, edge.end)
@@ -29,6 +33,8 @@ class Verifier(val problem: Problem) {
     }
 
     fun isOutOfBounds(p: Point): Boolean {
+        if (p in holeVertixes) return false
+
         return !awtHole.contains(p.x, p.y)
     }
 
