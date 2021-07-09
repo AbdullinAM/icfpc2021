@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.File
 import java.io.InputStream
+import java.io.Writer
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class Point(
@@ -43,3 +44,7 @@ inline fun <reified T> readValue(file: File): T = om.readValue(file)
 inline fun <reified T> readValue(file: String): T = om.readValue(file)
 inline fun <reified T> readValue(file: InputStream): T = om.readValue(file)
 
+fun readProblem(json: String): Problem = readValue(json)
+
+inline fun <reified T> writeValue(w: Writer, value: T) = om.writeValue(w, value)
+inline fun <reified T> T.toJsonString() = om.writeValueAsString(this)
