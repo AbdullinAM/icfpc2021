@@ -302,7 +302,7 @@ fun drawFigure(problem: Problem) {
     val (hole, startingFigure) = problem
 
     val verifier = Verifier(problem)
-    val holePoints = verifier.getHolePoints()
+    val holePoints = verifier.getHolePoints().toSet()
     var validPoints = emptyList<Point>()
 
     val figureStack = stack<Figure>()
@@ -394,7 +394,8 @@ fun drawFigure(problem: Problem) {
         canvas.invokeRepaint()
     }
     canvas.onKey("R") {
-        figureStack.push(figure.rotate90())
+        val point = canvas.canvasMousePosition?.round() ?: figure.center()
+        figureStack.push(figure.rotate(Math.PI / 4, point))
         canvas.invokeRepaint()
     }
     canvas.onKey("shift R") {
