@@ -324,6 +324,16 @@ fun drawFigure(problem: Problem) {
 
         val graphEdges = figure.calculatedEdges
 
+        for ((point, ratio) in validPoints) {
+            val (color, radius) = when (ratio) {
+                1.0 -> Color.GREEN to 1.5
+                else -> Color.PINK to (0.25 + 1.0 * ratio)
+            }
+            withPaint(color) {
+                fill(Ellipse2D(point, radius))
+            }
+        }
+
         for ((edge, oldEdge) in graphEdges.zip(startingFigure.calculatedEdges)) {
             val color = when {
                 checkCorrect(oldEdge, edge, problem.epsilon) -> Color.BLUE
@@ -339,16 +349,6 @@ fun drawFigure(problem: Problem) {
             val color = if (verifier.isOutOfBounds(point)) Color.RED else Color.BLUE
             withPaint(color) {
                 fill(Ellipse2D(point, 2.0))
-            }
-        }
-
-        for ((point, ratio) in validPoints) {
-            val (color, radius) = when (ratio) {
-                1.0 -> Color.GREEN to 1.5
-                else -> Color.PINK to (0.25 + 1.0 * ratio)
-            }
-            withPaint(color) {
-                fill(Ellipse2D(point, radius))
             }
         }
 
@@ -481,7 +481,7 @@ fun drawFigure(problem: Problem) {
                 })
 
                 val countCorrect = pointEdges.count { dataEdge ->
-                    val oldEdge = Edge(problem.figure.vertices[dataEdge.startIndex], problem.figure.vertices[dataEdge.endIndex])
+                    val oldEdge = Edge(startingFigure.vertices[dataEdge.startIndex], startingFigure.vertices[dataEdge.endIndex])
                     val newEdge = Edge(newFigure.vertices[dataEdge.startIndex], newFigure.vertices[dataEdge.endIndex])
 
                     checkCorrect(oldEdge, newEdge, problem.epsilon)
