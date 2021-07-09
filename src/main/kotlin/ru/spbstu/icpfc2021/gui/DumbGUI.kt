@@ -287,6 +287,9 @@ data class GetterAndSetterForLocalPropertyBitch<T>(
 
 fun drawFigure(problem: Problem) {
     val (hole, startingFigure) = problem
+
+    val verifier = Verifier(problem)
+
     val figureStack = stack<Figure>()
     figureStack.push(startingFigure)
     var figure: Figure by GetterAndSetterForLocalPropertyBitch(
@@ -317,7 +320,8 @@ fun drawFigure(problem: Problem) {
         }
 
         for (point in figure.vertices) {
-            withPaint(Color.BLUE) {
+            val color = if (verifier.isOutOfBounds(point)) Color.RED else Color.BLUE
+            withPaint(color) {
                 fill(Ellipse2D(point, 2.0))
             }
         }

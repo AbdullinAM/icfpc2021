@@ -25,6 +25,10 @@ class Verifier(val problem: Problem) {
         }
     }
 
+    fun isOutOfBounds(p: Point): Boolean {
+        return !awtHole.contains(p)
+    }
+
 }
 
 fun List<Point>.toArea(): Area {
