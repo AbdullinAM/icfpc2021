@@ -11,12 +11,11 @@ import java.awt.geom.Point2D
 import java.io.File
 import java.io.InputStream
 import java.io.Writer
-import kotlin.math.abs
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class Point(
     val x: Int, val y: Int
-): Point2D() {
+) : Point2D() {
     operator fun plus(other: Point) = Point(x + other.x, y + other.y)
     fun rotate90() = Point(y, -x)
 
@@ -41,35 +40,45 @@ data class Edge(val start: Point, val end: Point) {
     val squaredLength get() = start.squaredDistance(end)
 }
 
-fun checkCorrect(from: Edge, to: Edge, epsilon: Int) =
-    when {
-        to.squaredLength == 0L -> false
-        else -> abs(from.squaredLength / to.squaredLength.toDouble() - 1) <= epsilon / 1_000_000.0
+fun checkCorrect(from: Edge, to: Edge, epsilon: Int): Boolean {
+    val f = from.squaredLength
+    val t = to.squaredLength
+    return when {
+        t == 0L -> false
+        f == t -> true
+        f > t -> {
+            1_000_000.0 * f - 1_000_000.0 * t <= epsilon * f
+        }
+        else -> {
+            1_000_000.0 * t - 1_000_000.0 * f <= epsilon * f
+        }
     }
+}
 
 fun checkCorrect(from: Figure, to: Figure, epsilon: Int) =
     zip(from.calculatedEdges, to.calculatedEdges).all { (a, b) -> checkCorrect(a, b, epsilon) }
 
 typealias Hole = List<Point>
 
-enum class Axis { X, Y}
+enum class Axis { X, Y }
 
 data class Figure(
     val vertices: List<Point>,
     val edges: List<DataEdge>
 ) {
     @get:JsonIgnore
-    val calculatedEdges by lazy { edges.map { Edge(vertices[it.startIndex], vertices[it.endIndex]) }}
+    val calculatedEdges by lazy { edges.map { Edge(vertices[it.startIndex], vertices[it.endIndex]) } }
 
     fun moveAll(dp: Point) = copy(vertices = vertices.map { it + dp })
     fun rotate90() = copy(vertices = vertices.map { it.rotate90() })
-    fun mirror(axis: Axis) = when(axis) {
+    fun mirror(axis: Axis) = when (axis) {
         Axis.X -> copy(vertices = vertices.map { Point(it.x, -it.y) })
         Axis.Y -> copy(vertices = vertices.map { Point(-it.x, it.y) })
     }
 
     @get:JsonIgnore
-    val currentPose get() = Pose(vertices)
+    val currentPose
+        get() = Pose(vertices)
 }
 
 data class Problem(

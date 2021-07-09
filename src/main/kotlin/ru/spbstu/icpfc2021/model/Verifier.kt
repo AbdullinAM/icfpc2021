@@ -26,7 +26,7 @@ class Verifier(val problem: Problem) {
     }
 
     fun isOutOfBounds(p: Point): Boolean {
-        return !awtHole.contains(p)
+        return !awtHole.contains(p.x * 100.0, p.y * 100.0)
     }
 
 }
@@ -35,7 +35,7 @@ fun List<Point>.toArea(): Area {
     val poly = Polygon()
 
     for (p in this) {
-        poly.addPoint(p.x, p.y)
+        poly.addPoint(p.x * 100, p.y * 100)
     }
 
     return Area(poly)
