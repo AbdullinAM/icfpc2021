@@ -2,6 +2,7 @@ package ru.spbstu.icpfc2021.gui
 
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.model.Point
+import ru.spbstu.icpfc2021.result.loadSolution
 import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.stack
 import java.awt.*
@@ -285,10 +286,24 @@ data class GetterAndSetterForLocalPropertyBitch<T>(
     override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) = setter(value)
 }
 
+fun Figure.center(): Point = this.vertices.toArea().bounds.center.round()
+
+fun Figure.rotate(theta: Double, around: Point = center()): Figure {
+    val transform = AffineTransform.getRotateInstance(theta, around.getX(), around.getY())
+    return copy(vertices = vertices.map {
+        val res = Point2D.Double()
+        transform.transform(it, res)
+        res.round()
+    })
+}
+
+
 fun drawFigure(problem: Problem) {
     val (hole, startingFigure) = problem
 
     val verifier = Verifier(problem)
+    val holePoints = verifier.getHolePoints()
+    var validPoints = emptyList<Point>()
 
     val figureStack = stack<Figure>()
     figureStack.push(startingFigure)
@@ -326,6 +341,12 @@ fun drawFigure(problem: Problem) {
             }
         }
 
+        for (point in validPoints) {
+            withPaint(Color.GREEN) {
+                fill(Ellipse2D(point, 1.5))
+            }
+        }
+
         absolute {
             withPaint(Color.ORANGE) {
                 withFont(Font.decode("Fira-Mono-Bold-20")) {
@@ -356,6 +377,10 @@ fun drawFigure(problem: Problem) {
         println(figure.currentPose.toJsonString())
         saveResult(problem, figure)
     }
+    canvas.onKey("control L") {
+        figure = loadSolution(problem)
+        canvas.invokeRepaint()
+    }
     canvas.onKey("control Z") {
         if (figureStack.size > 1) {
             figureStack.pop()
@@ -370,6 +395,16 @@ fun drawFigure(problem: Problem) {
     }
     canvas.onKey("R") {
         figureStack.push(figure.rotate90())
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("shift R") {
+        val point = canvas.canvasMousePosition?.round() ?: figure.center()
+        figureStack.push(figure.rotate(0.05, point))
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("shift L") {
+        val point = canvas.canvasMousePosition?.round() ?: figure.center()
+        figureStack.push(figure.rotate(-0.05, point))
         canvas.invokeRepaint()
     }
     canvas.onKey("M") {
@@ -409,7 +444,36 @@ fun drawFigure(problem: Problem) {
         val end = e.canvasPoint
         canvas.translate(end.x - st.x, end.y - st.y)
     }
-    canvas.onMousePan(filter = { SwingUtilities.isLeftMouseButton(it) }) { start, prev, e ->
+    var startingPoint: IndexedValue<Point>? = null
+    var startFigure: Figure? = null
+    canvas.onMousePan(
+        filter = { SwingUtilities.isLeftMouseButton(it) },
+        destructor = { _, _ ->
+            startingPoint = null
+            startFigure = null
+            validPoints = emptyList()
+            canvas.invokeRepaint()
+        }
+    ) { start, prev, e ->
+        val startPoint = (startFigure ?: figure).vertices.withIndex().minByOrNull { (_, v) -> v.distance(start.canvasPoint) }
+        if (startPoint == null) return@onMousePan
+        if (startingPoint == null || startingPoint != startPoint) {
+            startingPoint = startPoint
+            startFigure = figure
+            val pointEdges = startFigure!!.edges.filter { it.startIndex == startPoint.index || it.endIndex == startPoint.index }
+            validPoints = holePoints.filter {
+                val newFigure = figure.copy(vertices = figure.vertices.toMutableList().apply {
+                    this[startPoint.index] = it
+                })
+
+                pointEdges.all { dataEdge ->
+                    val oldEdge = Edge(problem.figure.vertices[dataEdge.startIndex], problem.figure.vertices[dataEdge.endIndex])
+                    val newEdge = Edge(newFigure.vertices[dataEdge.startIndex], newFigure.vertices[dataEdge.endIndex])
+
+                    checkCorrect(oldEdge, newEdge, problem.epsilon)
+                }
+            }
+        }
         val stt = figure.vertices.withIndex().minByOrNull { (_, v) -> v.distance(prev.canvasPoint) }
         if (stt == null) return@onMousePan
         if (prev.canvasPoint.round() == e.canvasPoint.round()) return@onMousePan
