@@ -285,6 +285,18 @@ data class GetterAndSetterForLocalPropertyBitch<T>(
     override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) = setter(value)
 }
 
+fun Figure.center(): Point = this.vertices.toArea().bounds.center.round()
+
+fun Figure.rotate(theta: Double, around: Point = center()): Figure {
+    val transform = AffineTransform.getRotateInstance(theta, around.getX(), around.getY())
+    return copy(vertices = vertices.map {
+        val res = Point2D.Double()
+        transform.transform(it, res)
+        res.round()
+    })
+}
+
+
 fun drawFigure(problem: Problem) {
     val (hole, startingFigure) = problem
 
@@ -370,6 +382,16 @@ fun drawFigure(problem: Problem) {
     }
     canvas.onKey("R") {
         figureStack.push(figure.rotate90())
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("shift R") {
+        val point = canvas.canvasMousePosition?.round() ?: figure.center()
+        figureStack.push(figure.rotate(0.05, point))
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("shift L") {
+        val point = canvas.canvasMousePosition?.round() ?: figure.center()
+        figureStack.push(figure.rotate(-0.05, point))
         canvas.invokeRepaint()
     }
     canvas.onKey("M") {
