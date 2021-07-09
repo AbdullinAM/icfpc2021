@@ -14,11 +14,13 @@ import kotlin.math.abs
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class Point(
     val x: Int, val y: Int
-)
+) {
+    operator fun plus(other: Point) = Point(x + other.x, y + other.y)
+}
 
-fun Int.sqr() = this * this
+fun Int.sqr() = this.toLong() * this.toLong()
 
-fun Point.squaredDistance(other: Point) = (x - other.x).sqr() + (y - other.y).sqr()
+infix fun Point.squaredDistance(other: Point) = (x - other.x).sqr() + (y - other.y).sqr()
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class DataEdge(
@@ -41,6 +43,8 @@ data class Figure(
     val edges: List<DataEdge>
 ) {
     val calculatedEdges by lazy { edges.map { Edge(vertices[it.startIndex], vertices[it.endIndex]) }}
+
+    fun moveAll(dp: Point) = copy(vertices = vertices.map { it + dp })
 }
 
 data class Problem(
