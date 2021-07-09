@@ -2,6 +2,7 @@ package ru.spbstu.icpfc2021.gui
 
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.model.Point
+import ru.spbstu.wheels.stack
 import java.awt.*
 import java.awt.event.ActionEvent
 import java.awt.event.MouseAdapter
@@ -275,18 +276,20 @@ fun Point2D.round() = Point(x.roundToInt(), y.roundToInt())
 
 fun drawFigure(problem: Problem) {
     val (hole, startingFigure) = problem
-    var figure = startingFigure
+    val figureStack = stack<Figure>()
+    figureStack.push(startingFigure)
+    val figure = { figureStack.top!! }
     val holeVertices = hole.map { it.to2D() }
     val canvas = dumbCanvas {
         withPaint(Color.GRAY.brighter().brighter()) {
-            val hole = GeneralPath()
-            hole.moveTo(holeVertices.first())
-            for (point in holeVertices.drop(1)) hole.lineTo(point)
-            hole.closePath()
-            fill(hole)
+            val hole2D = GeneralPath()
+            hole2D.moveTo(holeVertices.first())
+            for (point in holeVertices.drop(1)) hole2D.lineTo(point)
+            hole2D.closePath()
+            fill(hole2D)
         }
 
-        val graphEdges = figure.calculatedEdges
+        val graphEdges = figure().calculatedEdges
 
         for ((edge, oldEdge) in graphEdges.zip(startingFigure.calculatedEdges)) {
             val color = when {
@@ -299,7 +302,7 @@ fun drawFigure(problem: Problem) {
             }
         }
 
-        for (point in figure.vertices) {
+        for (point in figure().vertices) {
             withPaint(Color.BLUE) {
                 fill(Ellipse2D(point, 2.0))
             }
@@ -308,7 +311,7 @@ fun drawFigure(problem: Problem) {
         absolute {
             withPaint(Color.ORANGE) {
                 withFont(Font.decode("Fira-Mono-Bold-20")) {
-                    drawString("dislikes: ${dislikes(hole, figure.currentPose)}", 20.0f, 20.0f)
+                    drawString("dislikes: ${dislikes(hole, figure().currentPose)}", 20.0f, 20.0f)
                 }
             }
         }
@@ -331,31 +334,37 @@ fun drawFigure(problem: Problem) {
         val tx = 20.0 / canvas.transform.scaleX
         canvas.translate(tx, 0.0)
     }
-    canvas.onKey("F") {
-        println(figure.toJsonString())
+    canvas.onKey("control S") {
+        println(figure().toJsonString())
+    }
+    canvas.onKey("control Z") {
+        if (figureStack.size > 1) {
+            figureStack.pop()
+            canvas.invokeRepaint()
+        }
     }
     canvas.onKey("R") {
-        figure = figure.rotate90()
+        figureStack.push(figure().rotate90())
         canvas.invokeRepaint()
     }
     canvas.onKey("M") {
-        figure = figure.mirror(Axis.X)
+        figureStack.push(figure().mirror(Axis.X))
         canvas.invokeRepaint()
     }
     canvas.onKey("W") {
-        figure = figure.moveAll(Point(0, -1))
+        figureStack.push(figure().moveAll(Point(0, -1)))
         canvas.invokeRepaint()
     }
     canvas.onKey("S") {
-        figure =  figure.moveAll(Point(0, 1))
+        figureStack.push(figure().moveAll(Point(0, 1)))
         canvas.invokeRepaint()
     }
     canvas.onKey("A") {
-        figure = figure.moveAll(Point(-1, 0))
+        figureStack.push(figure().moveAll(Point(-1, 0)))
         canvas.invokeRepaint()
     }
     canvas.onKey("D") {
-        figure = figure.moveAll(Point(1, 0))
+        figureStack.push(figure().moveAll(Point(1, 0)))
         canvas.invokeRepaint()
     }
     canvas.onKey(KeyStroke.getKeyStroke('+', 0)) {
