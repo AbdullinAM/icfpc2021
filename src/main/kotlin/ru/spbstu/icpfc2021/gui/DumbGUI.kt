@@ -12,6 +12,9 @@ import java.awt.geom.*
 import javax.swing.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.properties.ReadOnlyProperty
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 
 fun Action(body: (ActionEvent) -> Unit) = object : AbstractAction() {
@@ -274,11 +277,22 @@ fun Graphics2D.drawLine(start: Point2D, end: Point2D) =
 
 fun Point2D.round() = Point(x.roundToInt(), y.roundToInt())
 
+data class GetterAndSetterForLocalPropertyBitch<T>(
+    val getter: () -> T,
+    val setter: (T) -> Unit
+): ReadWriteProperty<Any?, T> {
+    override fun getValue(thisRef: Any?, property: KProperty<*>): T = getter()
+    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) = setter(value)
+}
+
 fun drawFigure(problem: Problem) {
     val (hole, startingFigure) = problem
     val figureStack = stack<Figure>()
     figureStack.push(startingFigure)
-    val figure = { figureStack.top!! }
+    var figure: Figure by GetterAndSetterForLocalPropertyBitch(
+        getter = { figureStack.top!! },
+        setter = { figureStack.push(it) }
+    )
     val holeVertices = hole.map { it.to2D() }
     val canvas = dumbCanvas {
         withPaint(Color.GRAY.brighter().brighter()) {
@@ -289,7 +303,7 @@ fun drawFigure(problem: Problem) {
             fill(hole2D)
         }
 
-        val graphEdges = figure().calculatedEdges
+        val graphEdges = figure.calculatedEdges
 
         for ((edge, oldEdge) in graphEdges.zip(startingFigure.calculatedEdges)) {
             val color = when {
@@ -302,7 +316,7 @@ fun drawFigure(problem: Problem) {
             }
         }
 
-        for (point in figure().vertices) {
+        for (point in figure.vertices) {
             withPaint(Color.BLUE) {
                 fill(Ellipse2D(point, 2.0))
             }
@@ -311,7 +325,7 @@ fun drawFigure(problem: Problem) {
         absolute {
             withPaint(Color.ORANGE) {
                 withFont(Font.decode("Fira-Mono-Bold-20")) {
-                    drawString("dislikes: ${dislikes(hole, figure().currentPose)}", 20.0f, 20.0f)
+                    drawString("dislikes: ${dislikes(hole, figure.currentPose)}", 20.0f, 20.0f)
                 }
             }
         }
@@ -335,7 +349,7 @@ fun drawFigure(problem: Problem) {
         canvas.translate(tx, 0.0)
     }
     canvas.onKey("control S") {
-        println(figure().toJsonString())
+        println(figure.toJsonString())
     }
     canvas.onKey("control Z") {
         if (figureStack.size > 1) {
@@ -344,27 +358,27 @@ fun drawFigure(problem: Problem) {
         }
     }
     canvas.onKey("R") {
-        figureStack.push(figure().rotate90())
+        figureStack.push(figure.rotate90())
         canvas.invokeRepaint()
     }
     canvas.onKey("M") {
-        figureStack.push(figure().mirror(Axis.X))
+        figureStack.push(figure.mirror(Axis.X))
         canvas.invokeRepaint()
     }
     canvas.onKey("W") {
-        figureStack.push(figure().moveAll(Point(0, -1)))
+        figureStack.push(figure.moveAll(Point(0, -1)))
         canvas.invokeRepaint()
     }
     canvas.onKey("S") {
-        figureStack.push(figure().moveAll(Point(0, 1)))
+        figureStack.push(figure.moveAll(Point(0, 1)))
         canvas.invokeRepaint()
     }
     canvas.onKey("A") {
-        figureStack.push(figure().moveAll(Point(-1, 0)))
+        figureStack.push(figure.moveAll(Point(-1, 0)))
         canvas.invokeRepaint()
     }
     canvas.onKey("D") {
-        figureStack.push(figure().moveAll(Point(1, 0)))
+        figureStack.push(figure.moveAll(Point(1, 0)))
         canvas.invokeRepaint()
     }
     canvas.onKey(KeyStroke.getKeyStroke('+', 0)) {
