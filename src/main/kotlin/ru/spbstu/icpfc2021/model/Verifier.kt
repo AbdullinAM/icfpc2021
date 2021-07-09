@@ -15,6 +15,10 @@ class Verifier(val problem: Problem) {
         problem.hole.toPoly()
     }
 
+    fun check(edge: Edge): Boolean {
+        return awtHole.hasIntersections(Line2D.Double(edge.start, edge.end))
+    }
+
     fun check(figure: Figure): Status {
         for (edge in figure.calculatedEdges) {
             val awtLine = Line2D.Double(edge.start, edge.end)
