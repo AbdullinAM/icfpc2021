@@ -75,7 +75,10 @@ data class Figure(
 data class Problem(
     val hole: Hole,
     val figure: Figure,
-    val epsilon: Int
+    val epsilon: Int,
+
+    @JsonIgnore
+    val number: Int = 0
 )
 
 data class Pose(
@@ -92,7 +95,7 @@ inline fun <reified T> readValue(file: File): T = om.readValue(file)
 inline fun <reified T> readValue(file: String): T = om.readValue(file)
 inline fun <reified T> readValue(file: InputStream): T = om.readValue(file)
 
-fun readProblem(json: String): Problem = readValue(json)
+fun readProblem(number: Int, json: String): Problem = readValue<Problem>(json).copy(number = number)
 
 inline fun <reified T> writeValue(w: Writer, value: T) = om.writeValue(w, value)
 inline fun <reified T> T.toJsonString() = om.writeValueAsString(this)

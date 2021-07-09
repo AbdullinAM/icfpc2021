@@ -2,6 +2,7 @@ package ru.spbstu.icpfc2021.gui
 
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.model.Point
+import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.stack
 import java.awt.*
 import java.awt.event.ActionEvent
@@ -12,7 +13,6 @@ import java.awt.geom.*
 import javax.swing.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -349,7 +349,8 @@ fun drawFigure(problem: Problem) {
         canvas.translate(tx, 0.0)
     }
     canvas.onKey("control S") {
-        println(figure.toJsonString())
+        println(figure.currentPose.toJsonString())
+        saveResult(problem, figure)
     }
     canvas.onKey("control Z") {
         if (figureStack.size > 1) {
