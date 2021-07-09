@@ -53,6 +53,9 @@ data class Pose(
     val vertices: List<Point>
 )
 
+fun dislikes(hole: Hole, pose: Pose) =
+    hole.sumOf { hp -> pose.vertices.minOf { vp -> hp.squaredDistance(vp) } }
+
 @PublishedApi
 internal val om = ObjectMapper().registerKotlinModule().registerKTuplesModule()
 
