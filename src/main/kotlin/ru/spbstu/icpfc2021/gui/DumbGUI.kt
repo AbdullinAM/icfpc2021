@@ -303,8 +303,7 @@ fun drawFigure(problem: Problem) {
 
     val verifier = Verifier(problem)
     val holePoints = verifier.getHolePoints().toSet()
-    val validPoints = mutableSetOf<Point>()
-    val candidatePoints = mutableSetOf<Point>()
+    val validPoints = mutableMapOf<Point, Double>()
 
     val figureStack = stack<Figure>()
     figureStack.push(startingFigure)
@@ -343,15 +342,13 @@ fun drawFigure(problem: Problem) {
             }
         }
 
-        for (point in candidatePoints) {
-            withPaint(Color.PINK) {
-                fill(Ellipse2D(point, 0.25))
+        for ((point, ratio) in validPoints) {
+            val (color, radius) = when (ratio) {
+                1.0 -> Color.GREEN to 1.5
+                else -> Color.PINK to (0.25 + 1.0 * ratio)
             }
-        }
-
-        for (point in validPoints) {
-            withPaint(Color.GREEN) {
-                fill(Ellipse2D(point, 1.5))
+            withPaint(color) {
+                fill(Ellipse2D(point, radius))
             }
         }
 
@@ -469,7 +466,6 @@ fun drawFigure(problem: Problem) {
             startFigure = null
             currentCoordinates = null
             validPoints.clear()
-            candidatePoints.clear()
             canvas.invokeRepaint()
         }
     ) { start, prev, e ->
@@ -490,10 +486,8 @@ fun drawFigure(problem: Problem) {
 
                     checkCorrect(oldEdge, newEdge, problem.epsilon)
                 }
-                if (countCorrect == pointEdges.size) {
-                    validPoints += it
-                } else if (countCorrect > 0) {
-                    candidatePoints += it
+                if (countCorrect > 1) {
+                    validPoints[it] = countCorrect.toDouble() / pointEdges.size
                 }
             }
         }
