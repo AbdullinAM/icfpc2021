@@ -42,7 +42,11 @@ data class Edge(val start: Point, val end: Point) {
 }
 
 fun checkCorrect(from: Edge, to: Edge, epsilon: Int) =
-    abs(from.squaredLength / to.squaredLength - 1) <= epsilon / 1_000_000.0
+    when {
+        to.squaredLength == 0L -> false
+        else -> abs(from.squaredLength / to.squaredLength.toDouble() - 1) <= epsilon / 1_000_000.0
+    }
+
 fun checkCorrect(from: Figure, to: Figure, epsilon: Int) =
     zip(from.calculatedEdges, to.calculatedEdges).all { (a, b) -> checkCorrect(a, b, epsilon) }
 

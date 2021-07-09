@@ -10,6 +10,7 @@ import java.awt.event.MouseWheelEvent
 import java.awt.geom.*
 import javax.swing.*
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 
 fun Action(body: (ActionEvent) -> Unit) = object : AbstractAction() {
@@ -270,6 +271,8 @@ fun GeneralPath.lineTo(point: Point2D) = lineTo(point.x, point.y)
 fun Graphics2D.drawLine(start: Point2D, end: Point2D) =
     drawLine(start.x.toInt(), start.y.toInt(), end.x.toInt(), end.y.toInt())
 
+fun Point2D.round() = Point(x.roundToInt(), y.roundToInt())
+
 fun drawFigure(problem: Problem) {
     val (hole, startingFigure) = problem
     var figure = startingFigure
@@ -371,6 +374,16 @@ fun drawFigure(problem: Problem) {
         val st = prev.canvasPoint
         val end = e.canvasPoint
         canvas.translate(end.x - st.x, end.y - st.y)
+    }
+    canvas.onMousePan(filter = { SwingUtilities.isLeftMouseButton(it) }) { start, prev, e ->
+        val stt = figure.vertices.withIndex().minByOrNull { (_, v) -> v.distance(prev.canvasPoint) }
+        if (stt == null) return@onMousePan
+        val (ix, _) = stt
+
+        figure = figure.copy(vertices = figure.vertices.toMutableList().apply {
+            this[ix] = e.canvasPoint.round() })
+        canvas.invokeRepaint()
+
     }
     dumbFrame(canvas).defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 }
