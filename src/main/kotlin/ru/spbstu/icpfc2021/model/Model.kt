@@ -1,13 +1,23 @@
 package ru.spbstu.icpfc2021.model
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.databind.ObjectMapper
 import ru.spbstu.ktuples.Tuple2
 import ru.spbstu.ktuples.jackson.registerKTuplesModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import java.io.File
+import java.io.InputStream
 
-typealias Point = Tuple2<Int, Int>
-typealias Edge = Tuple2<Int, Int>
+@JsonFormat(shape = JsonFormat.Shape.ARRAY)
+data class Point(
+    val x: Int, val y: Int
+)
+
+@JsonFormat(shape = JsonFormat.Shape.ARRAY)
+data class Edge(
+    val startIndex: Int, val endIndex: Int
+)
 
 typealias Hole = List<Point>
 
@@ -26,7 +36,10 @@ data class Pose(
     val vertices: List<Point>
 )
 
-private val om = ObjectMapper().registerKotlinModule().registerKTuplesModule()
+@PublishedApi
+internal val om = ObjectMapper().registerKotlinModule().registerKTuplesModule()
 
-fun readProblem(s: String) = om.readValue<Problem>(s)
+inline fun <reified T> readValue(file: File): T = om.readValue(file)
+inline fun <reified T> readValue(file: String): T = om.readValue(file)
+inline fun <reified T> readValue(file: InputStream): T = om.readValue(file)
 

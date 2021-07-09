@@ -1,4 +1,4 @@
-package ru.spbstu.icfpc2021
+package ru.spbstu.icpfc2021
 
 import kotlin.test.Test
 import kotlin.test.assertFails
