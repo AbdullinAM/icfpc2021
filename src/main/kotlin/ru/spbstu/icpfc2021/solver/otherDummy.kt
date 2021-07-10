@@ -41,9 +41,31 @@ class OtherDummySolver(
     val validEdges = hashSetOf<Edge>()
     lateinit var abstractSquares: Map<BigInteger, Set<Point>>
 
-    fun Set<Int>.best(): Int? = minByOrNull { v ->
-        verticesToEdges[v].size// { it.calculate().squaredLength }
+    fun Set<Int>.bestSmallestEdges(): Int? = minOfOrNull {
+        verticesToEdges[it].size
     }
+
+    fun Set<Int>.bestBiggestEdges(): Int? = maxByOrNull {
+            verticesToEdges[it].size
+    }
+
+    fun Set<Int>.randomBestSmallestEdges(): Int? {
+        val best = bestBiggestEdges()
+        return filter { verticesToEdges[it].size == best }.randomOrNull()
+    }
+
+    fun Set<Int>.randomBestBiggestEdges(): Int? = maxByOrNull {
+        val best = bestBiggestEdges()
+        return filter { verticesToEdges[it].size == best }.randomOrNull()
+    }
+
+    fun Set<Int>.bestLongestPaths(): Int? = maxByOrNull {
+        verticesToEdges[it].sumOf { it.calculate().squaredLength }
+    }
+
+    fun Set<Int>.randomVertice(): Int? = randomOrNull()
+
+    fun Set<Int>.best(): Int? = bestSmallestEdges()
 
     init {
 
@@ -199,7 +221,7 @@ class OtherDummySolver(
 
         val startingIdx = vctx.vertices.best() ?: return problem.figure
 
-        val result = searchVertex(startingIdx, vctx.withVertex(startingIdx))
+        val result = searchVertex(startingIdx, vctx.withVertex(startingIdx), true)
         if (result == null) error("No solution found")
         return problem.figure.copy(vertices = result.assigment.toList() as List<Point>)
     }
@@ -229,10 +251,11 @@ class OtherDummySolver(
     private fun Edge.vertexPoint(vertex: Int, abstractEdge: DataEdge) =
         if (abstractEdge.startIndex == vertex) start else end
 
-    fun searchVertex(vid: Int, ctx: VertexCtx): VertexCtx? {
+    fun searchVertex(vid: Int, ctx: VertexCtx, first: Boolean = false): VertexCtx? {
         val allAbstractEdges = verticesToEdges[vid]
         val allConcreteGroups = mutableMapOf<Point, MutableMap<DataEdge, Set<Edge>>>()
-        val currentVertexPossiblePoints = ctx.possiblePoints[vid]
+        var currentVertexPossiblePoints = ctx.possiblePoints[vid]
+        if (first) currentVertexPossiblePoints = currentVertexPossiblePoints.filter { it in problem.hole }.toSet()
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
             println("Assignments: ${ctx.assigment}")
@@ -275,10 +298,11 @@ class OtherDummySolver(
         val validAssignments = ctx.assigment.filterNotNull()
         val holeVertices = problem.hole.toSet() - validAssignments
         val possibleConcreteGroupsWithHolePriority = possibleConcreteGroups.entries.sortedWith(
-            compareBy<Map.Entry<Point, *>> { (it.key in holeVertices).toInt() }
-                .thenBy {
-                    validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
-                }.reversed()
+            compareBy<Map.Entry<Point, *>> {
+                (it.key in holeVertices).toInt()
+            }.thenBy {
+                validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
+            }.reversed()
         )
         for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
             var newCtx = ctx
