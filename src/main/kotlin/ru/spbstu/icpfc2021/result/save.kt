@@ -6,7 +6,7 @@ import java.io.File
 fun saveResult(problem: Problem, figure: Figure) {
     val verifier = Verifier(problem)
     when (verifier.check(figure)) {
-        Verifier.Status.OVERLAP ->  {
+        Verifier.Status.OVERLAP -> {
             println("Edges are overlapping")
             return
         }
@@ -35,5 +35,30 @@ fun saveResult(problem: Problem, figure: Figure) {
         println("Solution saved")
     } else {
         println("Current solution is worse than existing solution")
+    }
+}
+
+fun mergeResults(problemFolder: String, outputFolder: String, vararg solutionFolders: String) {
+    val problems = File(problemFolder).listFiles()?.map { readProblem(it.nameWithoutExtension.toInt(), it.readText()) }
+        ?: throw IllegalStateException()
+
+    for (problem in problems) {
+        println("Merging solutions for problem ${problem.number}")
+
+        val candidateSolutions = solutionFolders.mapNotNull {
+            val solutionFile = File("$it/${problem.number}.sol")
+            if (solutionFile.exists()) solutionFile.readText() else null
+        }.map { readValue<Pose>(it) }.toSet()
+        if (candidateSolutions.isEmpty()) {
+            println("No solutions for problem ${problem.number}")
+            continue
+        }
+
+        val bestSolutions = candidateSolutions.minByOrNull { dislikes(problem.hole, it) }!!
+        println("Updated solution for problem ${problem.number}")
+        val resultFile = File("$outputFolder/${problem.number}.sol").also {
+            it.parentFile?.mkdirs()
+        }
+        resultFile.writeText(bestSolutions.toJsonString())
     }
 }
