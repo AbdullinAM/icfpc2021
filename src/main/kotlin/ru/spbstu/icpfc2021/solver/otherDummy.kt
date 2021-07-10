@@ -5,6 +5,7 @@ import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentSet
 import ru.spbstu.icpfc2021.model.*
+import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.ktuples.Tuple
 import ru.spbstu.ktuples.Tuple3
 import ru.spbstu.ktuples.Tuple4
@@ -19,7 +20,8 @@ val BigInteger.millions get() = times(million)
 
 class OtherDummySolver(
     val allHolePoints: Set<Point>,
-    val problem: Problem
+    val problem: Problem,
+    val findAllSolutions: Boolean = false
 ) {
     val verifier = Verifier(problem)
     val allPointsToEdges: MapToSet<Point, Edge> = MapToSet()
@@ -255,6 +257,10 @@ class OtherDummySolver(
                 val fig = problem.figure.copy(vertices = newCtx.assigment.toList() as List<Point>)
                 if (!checkCorrect(problem.figure, fig, problem.epsilon)) {
                     println("Found incorrect assigment")
+                    return null
+                }
+                if (findAllSolutions) {
+                    saveResult(problem, fig)
                     return null
                 }
                 return newCtx
