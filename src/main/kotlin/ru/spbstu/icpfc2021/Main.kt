@@ -15,7 +15,8 @@ fun main(args: Array<String>) {
     println(problem)
     val solver = OtherDummySolver(
         Verifier(problem).getHolePoints().toSet(),
-        problem
+        problem,
+        showGraphics = true
     )
     val figure = solver.solve()
 
