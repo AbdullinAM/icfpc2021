@@ -19,7 +19,7 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
 
-private val million = BigInteger.valueOf(1_000_000)
+val million = BigInteger.valueOf(1_000_000)
 val Long.big get() = BigInteger.valueOf(this)
 val Int.big get() = BigInteger.valueOf(this.toLong())
 val BigInteger.millions get() = times(million)
