@@ -18,6 +18,7 @@ import javax.swing.SwingUtilities
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.random.Random
 
 val million = BigInteger.valueOf(1_000_000)
 val Long.big get() = BigInteger.valueOf(this)
@@ -29,11 +30,16 @@ fun Boolean.toInt() = when {
     else -> 0
 }
 
+enum class SolverMode {
+    SINGLE, RANDOM
+}
+
 class OtherDummySolver(
     val allHolePoints: Set<Point>,
     val problem: Problem,
     val findAllSolutions: Boolean = false,
-    val showGraphics: Boolean = false
+    val showGraphics: Boolean = false,
+    val mode: SolverMode = SolverMode.SINGLE
 ) {
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
@@ -212,7 +218,53 @@ class OtherDummySolver(
             }
 
         println("Start search")
+        return when (mode) {
+            SolverMode.SINGLE -> singleTryMode()
+            SolverMode.RANDOM -> randomTriesMode()
+        }
+    }
 
+    private fun randomTriesMode(): Figure {
+        var result: Figure? = null
+        var tryIdx = 0
+        while (tryIdx++ < 100) {
+            println("Start try $tryIdx")
+            val initialCtx = randomInitialSeed()
+            val randomInitialVertex = initialCtx.assigment.withIndex().filter { it.value != null }.map { it.index }.randomOrNull()
+            val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: return problem.figure
+            val tryResult = searchVertex(startingIdx, initialCtx.withVertex(startingIdx)) ?: continue
+            val tryFig = problem.figure.copy(vertices = tryResult.assigment.filterNotNull())
+            if (saveResult(problem, tryFig) || result == null) {
+                result = tryFig
+            }
+        }
+        return result ?: error("No solution found")
+    }
+
+    private fun randomInitialSeed(): VertexCtx {
+        val vertexAmount = problem.figure.vertices.size
+        val holeVertices = problem.hole.toMutableSet()
+        val assignments = MutableList<Point?>(vertexAmount) { null }
+        val bound = minOf(vertexAmount, holeVertices.size, 5)
+        for (i in 0..Random.nextInt(1, bound)) {
+            val emptyVertices = assignments.withIndex().filter { it.value == null }.map { it.index }
+            val vertex = emptyVertices.random()
+            val point = holeVertices.random()
+            holeVertices -= point
+            assignments[vertex] = point
+        }
+        val possiblePoints = MutableList(vertexAmount) { i ->
+            val assigment = assignments[i]
+            if (assigment == null) allHolePoints else setOf(assigment)
+        }
+        return VertexCtx(
+            possiblePoints.toPersistentList(),
+            assignments.toPersistentList(),
+            (0 until vertexAmount).toPersistentSet()
+        )
+    }
+
+    private fun singleTryMode(): Figure {
         val vctx = VertexCtx(
             MutableList(problem.figure.vertices.size) { allHolePoints }.toPersistentList(),
             MutableList(problem.figure.vertices.size) { null }.toPersistentList(),
@@ -221,8 +273,7 @@ class OtherDummySolver(
 
         val startingIdx = vctx.vertices.best() ?: return problem.figure
 
-        val result = searchVertex(startingIdx, vctx.withVertex(startingIdx), true)
-        if (result == null) error("No solution found")
+        val result = searchVertex(startingIdx, vctx.withVertex(startingIdx)) ?: error("No solution found")
         return problem.figure.copy(vertices = result.assigment.toList() as List<Point>)
     }
 
@@ -251,11 +302,10 @@ class OtherDummySolver(
     private fun Edge.vertexPoint(vertex: Int, abstractEdge: DataEdge) =
         if (abstractEdge.startIndex == vertex) start else end
 
-    fun searchVertex(vid: Int, ctx: VertexCtx, first: Boolean = false): VertexCtx? {
+    fun searchVertex(vid: Int, ctx: VertexCtx): VertexCtx? {
         val allAbstractEdges = verticesToEdges[vid]
         val allConcreteGroups = mutableMapOf<Point, MutableMap<DataEdge, Set<Edge>>>()
-        var currentVertexPossiblePoints = ctx.possiblePoints[vid]
-        if (first) currentVertexPossiblePoints = currentVertexPossiblePoints.filter { it in problem.hole }.toSet()
+        val currentVertexPossiblePoints = ctx.possiblePoints[vid]
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
             println("Assignments: ${ctx.assigment}")

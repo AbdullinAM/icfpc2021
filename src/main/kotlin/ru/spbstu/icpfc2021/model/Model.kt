@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import ru.spbstu.icpfc2021.solver.big
+import ru.spbstu.icpfc2021.solver.millions
 import ru.spbstu.ktuples.jackson.registerKTuplesModule
 import ru.spbstu.ktuples.zip
 import java.awt.geom.Point2D
@@ -95,6 +97,12 @@ data class Problem(
     @JsonIgnore
     val number: Int = 0
 )
+
+fun Problem.distanceToMillionsRange(realDistance: BigInteger): ClosedRange<BigInteger> {
+    val delta = epsilon.big * realDistance
+    val distance = realDistance.millions
+    return (distance - delta)..(distance + delta)
+}
 
 data class Pose(
     val vertices: List<Point>,

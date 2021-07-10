@@ -2,29 +2,46 @@ package ru.spbstu.icpfc2021.solver
 
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
+import ru.spbstu.icpfc2021.gui.drawFigure
 import ru.spbstu.icpfc2021.model.*
+import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.MapToSet
+import ru.spbstu.wheels.ints
+import java.io.File
 import java.math.BigInteger
 import javax.xml.crypto.Data
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.random.Random
 
-fun <T> List<Set<T>>.cartesian(): Set<PersistentList<T>> =
-    fold(setOf(persistentListOf())) { acc, set ->
-        acc.flatMapTo(mutableSetOf()) { list: PersistentList<T> ->
+fun <T> List<Set<T>>.cartesian(): MutableList<PersistentList<T>> =
+    fold(mutableListOf(persistentListOf())) { acc, set ->
+        acc.flatMapTo(mutableListOf()) { list: PersistentList<T> ->
             set.map { element -> list.add(element) }
         }
     }
 
+fun <T> Collection<MutableSet<T>>.intersectAll(): MutableSet<T> {
+    if (isEmpty()) return mutableSetOf()
+    val it = iterator()
+    var current = it.next()
+    for (set in it) {
+        var other = set
+        if (other.size > current.size) other = current.also { current = set }
+        current.retainAll(other)
+    }
+    return current
+}
+
 class fuzzer(
-    val problem: Problem
+    val problem: Problem,
+    var currentFigure: Figure = problem.figure
 ) {
 
     val verifier = Verifier(problem)
     val holePoints = verifier.getHolePoints()
-
-    var currentFigure: Figure = problem.figure
 
     val nodesToEdges: MapToSet<Int, DataEdge> = MapToSet()
     init {
@@ -79,27 +96,46 @@ class fuzzer(
         val dataEdges = nodesToEdges[pi]
 
         val currentPos = currentFigure.vertices[pi]
-        return dataEdges.mapNotNull {
+        return dataEdges.map {
             val el = it.calculateOriginal().squaredLength.big
             val neighbor = currentFigure.vertices[it.oppositeVertex(pi)]
             val candidates = abstractSquares[el]!!.mapTo(mutableSetOf()) { neighbor + it }
             candidates.retainAll { it in holePoints }
             candidates.retainAll { !verifier.check(Edge(it, neighbor)) }
             candidates.removeAll { it == currentPos }
-            candidates.takeIf { it.isNotEmpty() }
-        }.reduce { a: Set<Point>, b: Set<Point> -> a intersect b }
+            candidates
+        }.intersectAll()
     }
 
-    fun multipointCandidates(pis: List<Int>): Set<List<Point>> {
+    fun pickNeighbours(no: Int, seed: Int, res: MutableSet<Int> = mutableSetOf()): Set<Int> {
+        val edges = nodesToEdges[seed]
+        res += edges.shuffled().map { it.oppositeVertex(seed) }.take(no - res.size)
+        if (res.size < no) pickNeighbours(no, res.random(), res)
+        //while (res.size < no) {
+            //
+        //}
+        return res
+    }
+
+    fun randomPoints(no: Int, seed: Int): List<Int> {
+        return listOf(seed) + pickNeighbours(no - 1, seed)
+    }
+
+    fun multipointCandidates(pis: List<Int>): List<List<Point>> {
         val pisToSet = pis.toSet()
-        val res = mutableSetOf<List<Point>>()
+
+        val innerEdges = pis.flatMapTo(mutableSetOf()) { nodesToEdges[it] }
+        innerEdges.retainAll {
+            it.startIndex in pisToSet && it.endIndex in pisToSet
+        }
+
         val personalSets: List<Set<Point>> = pis.map { pi ->
             val dataEdges = nodesToEdges[pi]
 
             val currentPos = currentFigure.vertices[pi]
-            dataEdges.mapNotNull {
+            dataEdges.mapNotNull f@{
                 val opposite = it.oppositeVertex(pi)
-                if (opposite in pisToSet) return@mapNotNull null
+                if (opposite in pisToSet) return@f null
 
                 val el = it.calculateOriginal().squaredLength.big
                 val neighbor = currentFigure.vertices[it.oppositeVertex(pi)]
@@ -107,12 +143,68 @@ class fuzzer(
                 candidates.retainAll { it in holePoints }
                 candidates.retainAll { !verifier.check(Edge(it, neighbor)) }
                 candidates.removeAll { it == currentPos }
-                candidates.takeIf { it.isNotEmpty() }
-            }.reduce { a: Set<Point>, b: Set<Point> -> a intersect b }
+                candidates
+            }.intersectAll()
         }
-        if (personalSets.any { it.isEmpty() }) return emptySet()
+        if (personalSets.any { it.isEmpty() }) return emptyList()
 
-        return emptySet()
+        val cart = personalSets.cartesian()
+        cart.retainAll { solution ->
+            innerEdges.all { edge ->
+                val ourStartIndex = pis.indexOf(edge.startIndex)
+                val ourEndIndex = pis.indexOf(edge.endIndex)
+                val calculated = Edge(solution[ourStartIndex], solution[ourEndIndex])
+                !verifier.check(calculated)
+                        && calculated.squaredLength.big.millions in problem.distanceToMillionsRange(edge.calculateOriginal().squaredLength.big)
+            }
+        }
+
+        return cart
     }
 
+    fun fuzz() {
+        val numPoints = Random.nextInt(5) + 1
+        val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random())
+        println("Fuzzer: picked points $randomPoints")
+        val candidates = multipointCandidates(randomPoints).map { newPoint ->
+            currentFigure.run {
+                val acc = vertices.toMutableList()
+                for ((ix, i) in randomPoints.withIndex()) {
+                    acc[i] = newPoint[ix]
+                }
+                copy(vertices = acc)
+            }
+        }
+        val baseline = dislikes(problem.hole, currentFigure.currentPose)
+        val bestSol = candidates.map { it to dislikes(problem.hole, it.currentPose) }.minByOrNull { it.second }
+        when {
+            bestSol == null -> println("No solutions found =(")
+            bestSol.second > baseline -> println("Cannot improve current solution")
+            else -> currentFigure = bestSol.first
+        }
+    }
+
+}
+
+fun main(args: Array<String>) {
+    val index = args[0].toInt()
+    val problemJson = File("problems/$index.problem").readText()
+    println("$index.problem")
+    val problem = readProblem(index, problemJson)
+    println(problem)
+    val solutionJson = File("solutions/$index.sol").readText()
+    val solution = readValue<Pose>(solutionJson)
+    println("$index.sol")
+
+    val startFigure = problem.figure.copy(vertices = solution.vertices)
+    val fuzzer = fuzzer(problem, startFigure)
+    val gui = drawFigure(problem, startFigure)
+    while(true) {
+        //System.`in`.bufferedReader().readLine()
+        fuzzer.fuzz()
+        gui.setFigure(fuzzer.currentFigure)
+        gui.invokeRepaint()
+
+        saveResult(problem, fuzzer.currentFigure)
+    }
 }
