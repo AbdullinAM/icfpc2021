@@ -4,6 +4,7 @@ import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.model.Point
 import ru.spbstu.icpfc2021.result.loadSolution
 import ru.spbstu.icpfc2021.result.saveResult
+import ru.spbstu.wheels.Stack
 import ru.spbstu.wheels.stack
 import java.awt.*
 import java.awt.event.ActionEvent
@@ -297,8 +298,20 @@ fun Figure.rotate(theta: Double, around: Point = center()): Figure {
     })
 }
 
+data class GUIController(
+    val figureStack: Stack<Figure>,
+    val canvas: TransformablePanel
+) {
+    fun setFigure(figure: Figure){
+        figureStack.push(figure)
+    }
 
-fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
+    fun invokeRepaint() {
+        canvas.invokeRepaint()
+    }
+}
+
+fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
     val (hole, startingFigure) = problem
 
     val verifier = Verifier(problem)
@@ -306,6 +319,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
     val validPoints = mutableMapOf<Point, Double>()
 
     val figureStack = stack<Figure>()
+
     figureStack.push(startingFigure)
     if(initialFigure != null){
         figureStack.push(initialFigure)
@@ -520,6 +534,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
 
     }
     dumbFrame(canvas).defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+    return GUIController(figureStack, canvas)
 }
 
 
