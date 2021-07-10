@@ -272,7 +272,7 @@ class OtherDummySolver(
         val possibleConcreteGroupsWithHolePriority = possibleConcreteGroups.entries.sortedWith(
             compareBy<Map.Entry<Point, *>> { (it.key in holeVertices).toInt() }
                 .thenBy {
-                    validAssignments.maxOfOrNull { assignment -> Edge(it.key, assignment).squaredLength } ?: 0
+                    validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
                 }.reversed()
         )
         for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
