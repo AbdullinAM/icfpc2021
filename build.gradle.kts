@@ -27,5 +27,5 @@ tasks.getByName<Test>("test") {
 }
 
 application {
-    mainClassName = "ru.spbstu.icpfc2021.MainKt"
+    mainClass.set("ru.spbstu.icpfc2021.MainKt")
 }
