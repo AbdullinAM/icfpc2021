@@ -239,7 +239,11 @@ class OtherDummySolver(
             }
         }
         val possibleConcreteGroups = allConcreteGroups.filterValues { edges -> edges.keys == allAbstractEdges }
-        for ((vertexPoint, edges) in possibleConcreteGroups) {
+        val holeVertices = problem.hole.toSet()
+        val possibleConcreteGroupsWithHolePriority =  possibleConcreteGroups.entries.sortedByDescending {
+            it.key in holeVertices
+        }
+        for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
             var newCtx = ctx
             for ((abstractEdge, concreteEdges) in edges) {
                 val vertex = abstractEdge.oppositeVertex(vid)
@@ -256,7 +260,7 @@ class OtherDummySolver(
                     error("Not connected vertices")
                 val fig = problem.figure.copy(vertices = newCtx.assigment.toList() as List<Point>)
                 if (!checkCorrect(problem.figure, fig, problem.epsilon)) {
-                    println("Found incorrect assigment")
+//                    println("Found incorrect assigment")
                     return null
                 }
                 if (findAllSolutions) {
