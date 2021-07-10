@@ -1,7 +1,7 @@
 #!/bin/bash
 
-startProblem=60
-endProblem=78
+startProblem=1
+endProblem=88
 
 for (( i = startProblem; i <= endProblem; i++ )); do
   echo "Receiving problem $i"
