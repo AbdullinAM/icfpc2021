@@ -3,16 +3,16 @@ package ru.spbstu.icpfc2021.result
 import ru.spbstu.icpfc2021.model.*
 import java.io.File
 
-fun saveResult(problem: Problem, figure: Figure) {
+fun saveResult(problem: Problem, figure: Figure): Boolean {
     val verifier = Verifier(problem)
     when (verifier.check(figure)) {
         Verifier.Status.OVERLAP -> {
             println("Edges are overlapping")
-            return
+            return false
         }
         Verifier.Status.EDGE_VIOLATION -> {
             println("Edges violated!")
-            return
+            return false
         }
         Verifier.Status.OK -> println("Verification successful")
     }
@@ -33,8 +33,10 @@ fun saveResult(problem: Problem, figure: Figure) {
     if (currentDislikes < previousDislikes) {
         resultFile.writeText(currentPose.toJsonString())
         println("Solution saved")
+        return true
     } else {
         println("Current solution is worse than existing solution")
+        return false
     }
 }
 
