@@ -70,6 +70,21 @@ class OtherDummySolver(
             }
         }
 
+        repeat(3) {
+            val entriesCopy = validIndices.inner.entries.toSet()
+            entriesCopy.forEach { (p, ixs) ->
+                val toRemove = ixs.retainAll { ix ->
+                    verticesToEdges[ix].all { e ->
+                        val emil = e.calculate().squaredLength.big.millions
+                        allPointsToEdges[p].any {
+                            distancesToEdges[emil].contains(it)
+                                    && (e.endIndex in validIndices[it.start] && e.startIndex in validIndices[it.end]
+                                    || e.startIndex in validIndices[it.end] && e.startIndex in validIndices[it.start]) }
+                    }
+                }
+            }
+        }
+
         println("Start search: ${distancesToEdges.inner.values.sumOf { it.size }}")
 
         val initialContext = Context(

@@ -13,12 +13,12 @@ fun main(args: Array<String>) {
     println("$index.problem")
     val problem = readProblem(index, json)
     println(problem)
-//    val solver = OtherDummySolver(
-//        Verifier(problem).getHolePoints().toSet(),
-//        problem
-//    )
-//    val figure = solver.solve()
-//
-//    saveResult(problem, figure)
-    drawFigure(problem)
+    val solver = OtherDummySolver(
+        Verifier(problem).getHolePoints().toSet(),
+        problem
+    )
+    val figure = solver.solve()
+
+    saveResult(problem, figure)
+    drawFigure(problem, figure)
 }
