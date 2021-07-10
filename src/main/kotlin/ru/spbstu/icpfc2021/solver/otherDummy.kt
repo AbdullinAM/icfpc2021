@@ -271,7 +271,7 @@ class OtherDummySolver(
             }
             newCtx = newCtx.vertexPoints(vid, setOf(vertexPoint))
             newCtx = newCtx.assignVertex(vid, vertexPoint)
-            val nextVertex = newCtx.vertices.best()
+            val nextVertex = newCtx.vertices.minByOrNull { newCtx.possiblePoints[it].size }
             if (nextVertex == null) {
                 val assigmentIsComplete = newCtx.assigment.all { it != null }
                 if (!assigmentIsComplete)
