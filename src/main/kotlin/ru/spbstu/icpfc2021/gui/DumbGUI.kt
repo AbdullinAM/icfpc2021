@@ -298,7 +298,7 @@ fun Figure.rotate(theta: Double, around: Point = center()): Figure {
 }
 
 
-fun drawFigure(problem: Problem) {
+fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
     val (hole, startingFigure) = problem
 
     val verifier = Verifier(problem)
@@ -307,6 +307,9 @@ fun drawFigure(problem: Problem) {
 
     val figureStack = stack<Figure>()
     figureStack.push(startingFigure)
+    if(initialFigure != null){
+        figureStack.push(initialFigure)
+    }
     var figure: Figure by GetterAndSetterForLocalPropertyBitch(
         getter = { figureStack.top!! },
         setter = { figureStack.push(it) }
