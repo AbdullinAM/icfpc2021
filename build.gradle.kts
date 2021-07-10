@@ -1,6 +1,7 @@
 plugins {
     java
     kotlin("jvm") version "1.5.10"
+    application
 }
 
 group = "org.example"
@@ -23,4 +24,8 @@ dependencies {
 
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
+}
+
+application {
+    mainClassName = "ru.spbstu.icpfc2021.MainKt"
 }
