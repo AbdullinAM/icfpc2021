@@ -11,6 +11,7 @@ import ru.spbstu.wheels.MapToSet
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.geom.GeneralPath
+import java.io.File
 import java.math.BigInteger
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
@@ -214,7 +215,16 @@ class OtherDummySolver(
         val tryDuration = Duration.Companion.minutes(5)
         val timer = Timer()
         return run {
-            var result: Figure? = null
+            val resultFile = File("solutions/${problem.number}.sol").also {
+                it.parentFile?.mkdirs()
+            }
+            val previousSolution = try {
+                readValue<Pose>(resultFile)
+            } catch (e: Throwable) {
+                println("Could not read previous solution: ${e.message}")
+                null
+            }
+            var result: Figure? = previousSolution?.let { problem.figure.copy(vertices = it.vertices) }
             var tryIdx = 0
             while (tryIdx++ < retries) {
                 val score = result?.let { dislikes(problem.hole, it.currentPose)}
