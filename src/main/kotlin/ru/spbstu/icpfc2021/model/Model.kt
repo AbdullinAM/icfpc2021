@@ -98,7 +98,7 @@ data class Problem(
 
 data class Pose(
     val vertices: List<Point>,
-    val bonuses: List<BonusUse>
+    val bonuses: List<BonusUse>?
 )
 
 fun dislikes(hole: Hole, pose: Pose) =
@@ -131,4 +131,11 @@ data class BonusUse(
     val problem: Int
 )
 
-
+data class BonusInfo(
+    val data: List<BonusUse>
+) {
+    @get:JsonIgnore
+    val processed: Map<Int, List<BonusType>> by lazy {
+        data.groupBy({ it.problem }) { it.bonus }
+    }
+}
