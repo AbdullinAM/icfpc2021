@@ -43,11 +43,14 @@ class OtherDummySolver(
         for ((i, a) in allHolePoints.withIndex()) {
             for ((j, b) in allHolePoints.withIndex()) if (i < j) {
                 val edge = Edge(a, b)
-                if (verifier.check(edge)) {
+                val otherEdge = Edge(b, a)
+                if (verifier.check(edge) && verifier.check(otherEdge)) {
                     continue
                 }
                 allPointsToEdges[edge.start] += edge
+                allPointsToEdges[edge.start] += otherEdge
                 allPointsToEdges[edge.end] += edge
+                allPointsToEdges[edge.end] += otherEdge
 
                 val delta = problem.epsilon.big * edge.squaredLength.big
                 val distance = million * edge.squaredLength.big
@@ -55,6 +58,7 @@ class OtherDummySolver(
                 for (realDistance in distancesToEdges.inner.keys) {
                     if (realDistance in (distance - delta)..(distance + delta)) {
                         distancesToEdges[realDistance] += edge
+                        distancesToEdges[realDistance] += otherEdge
                     }
                 }
             }
