@@ -5,7 +5,10 @@ import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentSet
 import ru.spbstu.icpfc2021.model.*
+import ru.spbstu.ktuples.Tuple
 import ru.spbstu.ktuples.Tuple3
+import ru.spbstu.ktuples.Tuple4
+import ru.spbstu.wheels.MDMap
 import ru.spbstu.wheels.MapToSet
 import java.math.BigInteger
 
@@ -57,6 +60,16 @@ class OtherDummySolver(
             }
         }
 
+        for (p in allHolePoints) {
+            for (x in problem.figure.vertices.indices) {
+                val isValid = verticesToEdges[x].all { e ->
+                    val emil = e.calculate().squaredLength.big.millions
+                    allPointsToEdges[p].any { distancesToEdges[emil].contains(it) || distancesToEdges[emil].contains(it)  }
+                }
+                if (isValid) validIndices[p] += x
+            }
+        }
+
         println("Start search: ${distancesToEdges.inner.values.sumOf { it.size }}")
 
         val initialContext = Context(
@@ -73,29 +86,30 @@ class OtherDummySolver(
         let { Edge(problem.figure.vertices[it.startIndex], problem.figure.vertices[it.endIndex]) }
 
 
-    val cache: MutableSet<Tuple3<DataEdge, DataEdge, Point?>> = mutableSetOf()
+    val cache: MutableSet<Tuple4<DataEdge, DataEdge, Point?, Point?>> = mutableSetOf()
+
+    val validIndices = MapToSet<Point, Int>()
 
     private fun propagateEdge(edge: DataEdge, ctx: Context): Context? {
-//        println("edge = ${edge}")
-//        println("point = ${point}")
+        //println("edge = ${edge}")
 
         val assigmentIsComplete = ctx.assigment.all { it != null }
         if (assigmentIsComplete) {
             val fig = problem.figure.copy(vertices = ctx.assigment.toList() as List<Point>)
             if (!checkCorrect(problem.figure, fig, problem.epsilon)) {
-//        println("Found incorrect assigment")
+                println("Found incorrect assigment")
                 return null
             }
             return ctx
         }
 
-        var edgeCandidates = distancesToEdges[edge.calculate().squaredLength.big.millions]
-        edgeCandidates =
-            ctx.assigment[edge.startIndex]?.let { point -> edgeCandidates.filterTo(mutableSetOf()) { it.start == point || it.end == point } }
-                ?: edgeCandidates
-        edgeCandidates =
-            ctx.assigment[edge.endIndex]?.let { point -> edgeCandidates.filterTo(mutableSetOf()) { it.start == point || it.end == point } }
-                ?: edgeCandidates
+        val edgeCandidates = distancesToEdges[edge.calculate().squaredLength.big.millions].toMutableSet()
+        ctx.assigment[edge.startIndex]?.let { point -> edgeCandidates.retainAll { it.start == point || it.end == point } }
+        ctx.assigment[edge.endIndex]?.let { point -> edgeCandidates.retainAll { it.start == point || it.end == point } }
+        edgeCandidates.retainAll {
+            edge.startIndex in validIndices[it.start] && edge.endIndex in validIndices[it.end]
+                    || edge.endIndex in validIndices[it.start] && edge.startIndex in validIndices[it.end]
+        }
 
         for (candidate in edgeCandidates) {
             var newCtx = checkOrCreateAssigment(edge.startIndex, candidate.start, ctx) ?: continue
