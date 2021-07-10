@@ -40,8 +40,8 @@ class OtherDummySolver(
             distancesToEdges[edge.squaredLength.big.millions] = mutableSetOf()
         }
 
-        for (a in allHolePoints) {
-            for (b in allHolePoints) if (a !== b) {
+        for ((i, a) in allHolePoints.withIndex()) {
+            for ((j, b) in allHolePoints.withIndex()) if (i < j) {
                 val edge = Edge(a, b)
                 if (verifier.check(edge)) {
                     continue
@@ -64,7 +64,7 @@ class OtherDummySolver(
             for (x in problem.figure.vertices.indices) {
                 val isValid = verticesToEdges[x].all { e ->
                     val emil = e.calculate().squaredLength.big.millions
-                    allPointsToEdges[p].any { distancesToEdges[emil].contains(it) || distancesToEdges[emil].contains(it) }
+                    allPointsToEdges[p].any { distancesToEdges[emil].contains(it) }
                 }
                 if (isValid) validIndices[p] += x
             }
@@ -93,7 +93,10 @@ class OtherDummySolver(
             MutableList(problem.figure.vertices.size) { null }.toPersistentList(),
             (0 until problem.figure.vertices.size).toPersistentSet()
         )
-        val result = searchVertex(0, vctx.withVertex(0))
+
+        val startingIdx = vctx.vertices.maxByOrNull { v -> verticesToEdges[v].size } ?: return problem.figure
+
+        val result = searchVertex(startingIdx, vctx.withVertex(startingIdx))
         if (result == null) error("No solution found")
         return problem.figure.copy(vertices = result.assigment.toList() as List<Point>)
 
@@ -240,7 +243,7 @@ class OtherDummySolver(
             }
             newCtx = newCtx.vertexPoints(vid, setOf(vertexPoint))
             newCtx = newCtx.assignVertex(vid, vertexPoint)
-            val nextVertex = newCtx.vertices.firstOrNull()
+            val nextVertex = newCtx.vertices.maxByOrNull { v -> verticesToEdges[v].size }
             if (nextVertex == null) {
                 val assigmentIsComplete = newCtx.assigment.all { it != null }
                 if (!assigmentIsComplete)
