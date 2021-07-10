@@ -24,6 +24,11 @@ val Long.big get() = BigInteger.valueOf(this)
 val Int.big get() = BigInteger.valueOf(this.toLong())
 val BigInteger.millions get() = times(million)
 
+fun Boolean.toInt() = when {
+    this -> 1
+    else -> 0
+}
+
 class OtherDummySolver(
     val allHolePoints: Set<Point>,
     val problem: Problem,
@@ -33,10 +38,11 @@ class OtherDummySolver(
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
     val overlays = mutableListOf<Pair<Drawable, Color>>()
+    val validEdges = hashSetOf<Edge>()
     lateinit var abstractSquares: Map<BigInteger, Set<Point>>
 
-    fun Set<Int>.best(): Int? = maxByOrNull {
-            v -> verticesToEdges[v].sumOf { it.calculate().squaredLength }
+    fun Set<Int>.best(): Int? = minByOrNull { v ->
+        verticesToEdges[v].size// { it.calculate().squaredLength }
     }
 
     init {
@@ -68,7 +74,7 @@ class OtherDummySolver(
             }
 
             for (b in problem.bonuses.orEmpty()) {
-                val color = when(b.bonus) {
+                val color = when (b.bonus) {
                     BonusType.GLOBALIST -> Color.YELLOW
                     BonusType.BREAK_A_LEG -> Color.MAGENTA
                 }
@@ -132,6 +138,7 @@ class OtherDummySolver(
         this[edge.start].add(edge)
         this[edge.end].add(edge)
     }
+
     operator fun MapToSet<Point, Edge>.contains(edge: Edge) =
         this[edge.start].contains(edge) || this[edge.end].contains(edge)
 
@@ -149,37 +156,38 @@ class OtherDummySolver(
 
         abstractSquares = problem.figure.calculatedEdges.mapTo(mutableSetOf()) { it.squaredLength.big }
             .associateWith { realDistance ->
-            val result = mutableSetOf<Point>()
-            val delta = problem.epsilon.big * realDistance
-            val distance = realDistance.millions
+                val result = mutableSetOf<Point>()
+                val delta = problem.epsilon.big * realDistance
+                val distance = realDistance.millions
 
-            val range = (distance - delta)..(distance + delta)
+                val range = (distance - delta)..(distance + delta)
 
-            val outerRadius = ceil(sqrt(((delta + distance) / million).toDouble())).toInt() + 10
-            val innerRadius = floor(sqrt((((distance - delta).toDouble() / sqrt(2.0)) / million.toDouble()))).toInt() - 10
+                val outerRadius = ceil(sqrt(((delta + distance) / million).toDouble())).toInt() + 10
+                val innerRadius =
+                    floor(sqrt((((distance - delta).toDouble() / sqrt(2.0)) / million.toDouble()))).toInt() - 10
 
-            for (x in innerRadius..outerRadius) {
-                for (y in -outerRadius..outerRadius) {
-                    val edgeLen = Edge(Point(0, 0), Point(x, y)).squaredLength.big.millions
-                    if (edgeLen !in range) continue
+                for (x in innerRadius..outerRadius) {
+                    for (y in -outerRadius..outerRadius) {
+                        val edgeLen = Edge(Point(0, 0), Point(x, y)).squaredLength.big.millions
+                        if (edgeLen !in range) continue
 
-                    result += Point(x, y)
-                    result += Point(-x, y)
+                        result += Point(x, y)
+                        result += Point(-x, y)
+                    }
                 }
-            }
 
-            for (x in -outerRadius..outerRadius) {
-                for (y in innerRadius..outerRadius) {
-                    val edgeLen = Edge(Point(0, 0), Point(x, y)).squaredLength.big.millions
-                    if (edgeLen !in range) continue
+                for (x in -outerRadius..outerRadius) {
+                    for (y in innerRadius..outerRadius) {
+                        val edgeLen = Edge(Point(0, 0), Point(x, y)).squaredLength.big.millions
+                        if (edgeLen !in range) continue
 
-                    result += Point(x, y)
-                    result += Point(x, -y)
+                        result += Point(x, y)
+                        result += Point(x, -y)
+                    }
                 }
-            }
 
-            result
-        }
+                result
+            }
 
         println("Start search")
 
@@ -246,9 +254,16 @@ class OtherDummySolver(
             val groupedConcreteEdges = currentVertexPossiblePoints.associateWith { startPoint ->
                 possibleDistances.mapNotNull { distance ->
                     val endPoint = startPoint + distance
-                    if(endPoint !in otherVertexPossiblePoints) return@mapNotNull null
-                    val edge =if(abstractEdge.isReversed(vid)) Edge(endPoint, startPoint) else Edge(startPoint, endPoint)
-                    if(!verifier.check(edge)) edge else null
+                    if (endPoint !in otherVertexPossiblePoints) return@mapNotNull null
+                    val edge = when {
+                        abstractEdge.isReversed(vid) -> Edge(endPoint, startPoint)
+                        else -> Edge(startPoint, endPoint)
+                    }
+                    when {
+                        edge in validEdges -> edge
+                        !verifier.check(edge) -> edge.also { validEdges += it }
+                        else -> null
+                    }
                 }
             }.filterValues { it.isNotEmpty() }
             for ((keyPoint, edges) in groupedConcreteEdges) {
@@ -257,10 +272,14 @@ class OtherDummySolver(
             }
         }
         val possibleConcreteGroups = allConcreteGroups.filterValues { edges -> edges.keys == allAbstractEdges }
-        val holeVertices = problem.hole.toSet()
-        val possibleConcreteGroupsWithHolePriority =  possibleConcreteGroups.entries.sortedByDescending {
-            it.key in holeVertices
-        }
+        val validAssignments = ctx.assigment.filterNotNull()
+        val holeVertices = problem.hole.toSet() - validAssignments
+        val possibleConcreteGroupsWithHolePriority = possibleConcreteGroups.entries.sortedWith(
+            compareBy<Map.Entry<Point, *>> { (it.key in holeVertices).toInt() }
+                .thenBy {
+                    validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
+                }.reversed()
+        )
         for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
             var newCtx = ctx
             for ((abstractEdge, concreteEdges) in edges) {

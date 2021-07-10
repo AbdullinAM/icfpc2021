@@ -4,6 +4,11 @@ import java.awt.Polygon
 import java.awt.geom.Area
 import java.awt.geom.Line2D
 import java.awt.geom.PathIterator
+import java.awt.geom.Point2D
+
+val GOLDEN_RATIO = 0.25
+
+val midPointCoeffs = listOf(GOLDEN_RATIO, 0.5, 1 - GOLDEN_RATIO)
 
 class Verifier(val problem: Problem) {
 
@@ -15,10 +20,6 @@ class Verifier(val problem: Problem) {
         problem.hole.toPoly()
     }
 
-    fun check(edge: Edge): Boolean {
-        return hasIntersections(holeSides, Line2D.Double(edge.start, edge.end))
-    }
-
     val holeVertexes by lazy {
         problem.hole.toSet()
     }
@@ -27,11 +28,41 @@ class Verifier(val problem: Problem) {
         awtHole.sides().toList()
     }
 
+    fun check(edge: Edge): Boolean {
+        val awtLine = Line2D.Double(edge.start, edge.end)
+
+        if (hasIntersections(holeSides, awtLine))
+            return true
+
+        for (c in midPointCoeffs) {
+            val midPoint = Point2D.Double(
+                awtLine.x1 + c * (awtLine.x2 - awtLine.x1),
+                awtLine.y1 + c * (awtLine.y2 - awtLine.y1)
+            )
+
+            if (isOutOfBounds(midPoint))
+                return true
+        }
+
+        return false
+    }
+
     fun check(figure: Figure): Status {
         for (edge in figure.calculatedEdges) {
             val awtLine = Line2D.Double(edge.start, edge.end)
 
-            if (hasIntersections(holeSides, awtLine)) return Status.OVERLAP
+            if (hasIntersections(holeSides, awtLine))
+                return Status.OVERLAP
+
+            for (c in midPointCoeffs) {
+                val midPoint = Point2D.Double(
+                    awtLine.x1 + c * (awtLine.x2 - awtLine.x1),
+                    awtLine.y1 + c * (awtLine.y2 - awtLine.y1)
+                )
+
+                if (isOutOfBounds(midPoint))
+                    return Status.OVERLAP
+            }
         }
 
         return when {
@@ -40,16 +71,18 @@ class Verifier(val problem: Problem) {
         }
     }
 
-    fun isOutOfBounds(p: Point): Boolean {
+    fun isOutOfBounds(p2d: Point2D): Boolean {
+        val p = Point(p2d.x.toInt(), p2d.y.toInt())
+
         if (p in holeVertexes) return false
 
         for (side in holeSides) {
-            val rCCW = Line2D.relativeCCW(side.x1, side.y1, side.x2, side.y2, p.getX(), p.getY())
+            val rCCW = Line2D.relativeCCW(side.x1, side.y1, side.x2, side.y2, p2d.x, p2d.y)
 
             if (rCCW == 0) return false
         }
 
-        return !awtHole.contains(p.x, p.y)
+        return !awtHole.contains(p2d.x, p2d.y)
     }
 
     fun getHolePoints(): List<Point> {
