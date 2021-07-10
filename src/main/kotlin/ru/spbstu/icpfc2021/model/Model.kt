@@ -83,20 +83,22 @@ data class Figure(
 
     @get:JsonIgnore
     val currentPose
-        get() = Pose(vertices)
+        get() = Pose(vertices, listOf())
 }
 
 data class Problem(
     val hole: Hole,
     val figure: Figure,
     val epsilon: Int,
+    val bonuses: List<Bonus> = listOf(),
 
     @JsonIgnore
     val number: Int = 0
 )
 
 data class Pose(
-    val vertices: List<Point>
+    val vertices: List<Point>,
+    val bonuses: List<BonusUse>
 )
 
 fun dislikes(hole: Hole, pose: Pose) =
@@ -113,3 +115,20 @@ fun readProblem(number: Int, json: String): Problem = readValue<Problem>(json).c
 
 inline fun <reified T> writeValue(w: Writer, value: T) = om.writeValue(w, value)
 inline fun <reified T> T.toJsonString() = om.writeValueAsString(this)
+
+enum class BonusType { GLOBALIST, BREAK_A_LEG }
+
+data class Bonus(
+    val position: Point,
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    val bonus: BonusType,
+    val problem: Int
+)
+
+data class BonusUse(
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    val bonus: BonusType,
+    val problem: Int
+)
+
+
