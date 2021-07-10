@@ -139,3 +139,8 @@ data class BonusInfo(
         data.groupBy({ it.problem }) { it.bonus }
     }
 }
+
+fun DataEdge.oppositeVertex(vertex: Int) = if (startIndex == vertex) endIndex else startIndex
+fun DataEdge.isReversed(vertex: Int) = startIndex != vertex
+fun Edge.vertexPoint(vertex: Int, abstractEdge: DataEdge) =
+    if (abstractEdge.startIndex == vertex) start else end
