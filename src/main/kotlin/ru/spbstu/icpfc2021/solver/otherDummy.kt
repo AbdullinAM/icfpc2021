@@ -18,6 +18,7 @@ import javax.swing.SwingUtilities
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.random.Random
 
 val million = BigInteger.valueOf(1_000_000)
 val Long.big get() = BigInteger.valueOf(this)
@@ -221,7 +222,8 @@ class OtherDummySolver(
         val vertexAmount = problem.figure.vertices.size
         val holeVertices = problem.hole.toMutableSet()
         val assignments = MutableList<Point?>(vertexAmount) { null }
-        for (i in 0..minOf(vertexAmount, holeVertices.size, 5)) {
+        val bound = minOf(vertexAmount, holeVertices.size, 5)
+        for (i in 0..Random.nextInt(1, bound)) {
             val emptyVertices = assignments.withIndex().filter { it.value == null }.map { it.index }
             val vertex = emptyVertices.random()
             val point = holeVertices.random()
