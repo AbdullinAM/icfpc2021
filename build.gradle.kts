@@ -19,6 +19,9 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.1")
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.4")
+    implementation("io.github.libktx:ktx-box2d:1.10.0-b1")
+    implementation("com.badlogicgames.gdx:gdx-backend-lwjgl:1.9.14")
+    implementation("com.badlogicgames.gdx:gdx-box2d:1.9.14")
     testImplementation(kotlin("test"))
 }
 
