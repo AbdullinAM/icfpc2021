@@ -64,7 +64,7 @@ class OtherDummySolver(
             for (x in problem.figure.vertices.indices) {
                 val isValid = verticesToEdges[x].all { e ->
                     val emil = e.calculate().squaredLength.big.millions
-                    allPointsToEdges[p].any { distancesToEdges[emil].contains(it) || distancesToEdges[emil].contains(it)  }
+                    allPointsToEdges[p].any { distancesToEdges[emil].contains(it) || distancesToEdges[emil].contains(it) }
                 }
                 if (isValid) validIndices[p] += x
             }
@@ -79,7 +79,8 @@ class OtherDummySolver(
                         allPointsToEdges[p].any {
                             distancesToEdges[emil].contains(it)
                                     && (e.endIndex in validIndices[it.start] && e.startIndex in validIndices[it.end]
-                                    || e.startIndex in validIndices[it.end] && e.startIndex in validIndices[it.start]) }
+                                    || e.startIndex in validIndices[it.end] && e.startIndex in validIndices[it.start])
+                        }
                     }
                 }
             }
@@ -87,14 +88,23 @@ class OtherDummySolver(
 
         println("Start search: ${distancesToEdges.inner.values.sumOf { it.size }}")
 
-        val initialContext = Context(
-            problem.figure.edges.toPersistentSet(),
-            MutableList(problem.figure.vertices.size) { null }.toPersistentList()
+        val vctx = VertexCtx(
+            MutableList(problem.figure.vertices.size) { allHolePoints }.toPersistentList(),
+            MutableList(problem.figure.vertices.size) { null }.toPersistentList(),
+            (0 until problem.figure.vertices.size).toPersistentSet()
         )
-        val initialEdge = problem.figure.edges.maxByOrNull { it.calculate().squaredLength }!!
-        val result = propagateEdge(initialEdge, initialContext.withEdge(initialEdge))
-        if (result == null) error("PEZDA")
+        val result = searchVertex(0, vctx.withVertex(0))
+        if (result == null) error("No solution found")
         return problem.figure.copy(vertices = result.assigment.toList() as List<Point>)
+
+//        val initialContext = Context(
+//            problem.figure.edges.toPersistentSet(),
+//            MutableList(problem.figure.vertices.size) { null }.toPersistentList()
+//        )
+//        val initialEdge = problem.figure.edges.maxByOrNull { it.calculate().squaredLength }!!
+//        val result = propagateEdge(initialEdge, initialContext.withEdge(initialEdge))
+//        if (result == null) error("PEZDA")
+//        return problem.figure.copy(vertices = result.assigment.toList() as List<Point>)
     }
 
     private fun DataEdge.calculate() =
@@ -185,6 +195,67 @@ class OtherDummySolver(
     data class Context(val edges: PersistentSet<DataEdge>, val assigment: PersistentList<Point?>) {
         fun assignVertex(vertex: Int, point: Point) = Context(edges, assigment.set(vertex, point))
         fun withEdge(edge: DataEdge) = Context(edges.remove(edge), assigment)
+    }
+
+
+    data class VertexCtx(
+        val possiblePoints: PersistentList<Set<Point>>,
+        val assigment: PersistentList<Point?>,
+        val vertices: PersistentSet<Int>
+    ) {
+        fun vertexPoints(vertex: Int, points: Set<Point>) =
+            VertexCtx(possiblePoints.set(vertex, points), assigment, vertices)
+
+        fun assignVertex(vertex: Int, point: Point) = VertexCtx(possiblePoints, assigment.set(vertex, point), vertices)
+        fun withVertex(vertex: Int) = VertexCtx(possiblePoints, assigment, vertices.remove(vertex))
+    }
+
+    private fun DataEdge.oppositeVertex(vertex: Int) = if (startIndex == vertex) endIndex else startIndex
+    private fun Edge.vertexPoint(vertex: Int, abstractEdge: DataEdge) =
+        if (abstractEdge.startIndex == vertex) start else end
+
+    fun searchVertex(vid: Int, ctx: VertexCtx): VertexCtx? {
+        val allAbstractEdges = verticesToEdges[vid]
+        val allConcreteGroups = mutableMapOf<Point, MutableMap<DataEdge, Set<Edge>>>()
+        for (abstractEdge in allAbstractEdges) {
+            val possibleConcreteEdges = distancesToEdges[abstractEdge.calculate().squaredLength.big.millions]
+            val otherVertexPossiblePoints = ctx.possiblePoints[abstractEdge.oppositeVertex(vid)]
+            val withPossibleOtherVertices = possibleConcreteEdges.filter {
+                it.vertexPoint(abstractEdge.oppositeVertex(vid), abstractEdge) in otherVertexPossiblePoints
+            }
+            val groupedConcreteEdges = withPossibleOtherVertices.groupBy { it.vertexPoint(vid, abstractEdge) }
+            for ((keyPoint, edges) in groupedConcreteEdges) {
+                val vertexEdges = allConcreteGroups.getOrPut(keyPoint) { mutableMapOf() }
+                vertexEdges[abstractEdge] = edges.toSet()
+            }
+        }
+        val possibleConcreteGroups = allConcreteGroups.filterValues { edges -> edges.keys == allAbstractEdges }
+        for ((vertexPoint, edges) in possibleConcreteGroups) {
+            var newCtx = ctx
+            for ((abstractEdge, concreteEdges) in edges) {
+                val vertex = abstractEdge.oppositeVertex(vid)
+                val points = concreteEdges.map { it.vertexPoint(vertex, abstractEdge) }.toSet()
+                val newPoints = points.intersect(newCtx.possiblePoints[vertex])
+                newCtx = newCtx.vertexPoints(vertex, newPoints)
+            }
+            newCtx = newCtx.vertexPoints(vid, setOf(vertexPoint))
+            newCtx = newCtx.assignVertex(vid, vertexPoint)
+            val nextVertex = newCtx.vertices.firstOrNull()
+            if (nextVertex == null) {
+                val assigmentIsComplete = newCtx.assigment.all { it != null }
+                if (!assigmentIsComplete)
+                    error("Not connected vertices")
+                val fig = problem.figure.copy(vertices = newCtx.assigment.toList() as List<Point>)
+                if (!checkCorrect(problem.figure, fig, problem.epsilon)) {
+                    println("Found incorrect assigment")
+                    return null
+                }
+                return newCtx
+            }
+            val res = searchVertex(nextVertex, newCtx.withVertex(nextVertex))
+            if (res != null) return res
+        }
+        return null
     }
 
 }
