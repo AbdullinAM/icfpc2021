@@ -6,6 +6,10 @@ import java.awt.geom.Line2D
 import java.awt.geom.PathIterator
 import java.awt.geom.Point2D
 
+val GOLDEN_RATIO = 0.25
+
+val midPointCoeffs = listOf(GOLDEN_RATIO, 0.5, 1 - GOLDEN_RATIO)
+
 class Verifier(val problem: Problem) {
 
     enum class Status {
@@ -27,22 +31,38 @@ class Verifier(val problem: Problem) {
     fun check(edge: Edge): Boolean {
         val awtLine = Line2D.Double(edge.start, edge.end)
 
-        val midPoint = Point2D.Double((awtLine.x1 + awtLine.x2) / 2, (awtLine.y1 + awtLine.y2) / 2)
+        if (hasIntersections(holeSides, awtLine))
+            return true
 
-        return hasIntersections(holeSides, awtLine) ||
-                isOutOfBounds(midPoint)
+        for (c in midPointCoeffs) {
+            val midPoint = Point2D.Double(
+                awtLine.x1 + c * (awtLine.x2 - awtLine.x1),
+                awtLine.y1 + c * (awtLine.y2 - awtLine.y1)
+            )
+
+            if (isOutOfBounds(midPoint))
+                return true
+        }
+
+        return false
     }
 
     fun check(figure: Figure): Status {
         for (edge in figure.calculatedEdges) {
             val awtLine = Line2D.Double(edge.start, edge.end)
 
-            val midPoint = Point2D.Double((awtLine.x1 + awtLine.x2) / 2, (awtLine.y1 + awtLine.y2) / 2)
-
             if (hasIntersections(holeSides, awtLine))
                 return Status.OVERLAP
-            if (isOutOfBounds(midPoint))
-                return Status.OVERLAP
+
+            for (c in midPointCoeffs) {
+                val midPoint = Point2D.Double(
+                    awtLine.x1 + c * (awtLine.x2 - awtLine.x1),
+                    awtLine.y1 + c * (awtLine.y2 - awtLine.y1)
+                )
+
+                if (isOutOfBounds(midPoint))
+                    return Status.OVERLAP
+            }
         }
 
         return when {
