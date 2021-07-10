@@ -38,10 +38,11 @@ class OtherDummySolver(
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
     val overlays = mutableListOf<Pair<Drawable, Color>>()
+    val validEdges = hashSetOf<Edge>()
     lateinit var abstractSquares: Map<BigInteger, Set<Point>>
 
-    fun Set<Int>.best(): Int? = maxByOrNull { v ->
-        verticesToEdges[v].sumOf { it.calculate().squaredLength }
+    fun Set<Int>.best(): Int? = minByOrNull { v ->
+        verticesToEdges[v].size// { it.calculate().squaredLength }
     }
 
     init {
@@ -258,7 +259,11 @@ class OtherDummySolver(
                         abstractEdge.isReversed(vid) -> Edge(endPoint, startPoint)
                         else -> Edge(startPoint, endPoint)
                     }
-                    if (!verifier.check(edge)) edge else null
+                    when {
+                        edge in validEdges -> edge
+                        !verifier.check(edge) -> edge.also { validEdges += it }
+                        else -> null
+                    }
                 }
             }.filterValues { it.isNotEmpty() }
             for ((keyPoint, edges) in groupedConcreteEdges) {
