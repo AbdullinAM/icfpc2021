@@ -217,7 +217,9 @@ class OtherDummySolver(
             var result: Figure? = null
             var tryIdx = 0
             while (tryIdx++ < retries) {
-                println("Start try $tryIdx | ${result?.let { dislikes(problem.hole, it.currentPose) }}")
+                val score = result?.let { dislikes(problem.hole, it.currentPose)}
+                if (score != null && result != null && score == 0L) return result
+                println("Start try $tryIdx | ${score}}")
                 solverIsRunning.set(true)
                 val cancelation = object : TimerTask() {
                     override fun run() {
