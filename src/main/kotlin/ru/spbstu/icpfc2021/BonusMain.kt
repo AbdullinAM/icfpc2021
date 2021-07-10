@@ -33,7 +33,7 @@ fun main(args: Array<String>) {
     for ((n, p) in problemMap) {
         val s = solutionMap[n] ?: continue
 
-        for (b in p.bonuses) {
+        for (b in p.bonuses.orEmpty()) {
             if (b.position !in s.vertices) continue
 
             info += BonusUse(b.bonus, b.problem)
