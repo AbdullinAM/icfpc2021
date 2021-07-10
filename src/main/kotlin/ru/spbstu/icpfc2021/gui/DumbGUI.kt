@@ -303,7 +303,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
 
     val verifier = Verifier(problem)
     val holePoints = verifier.getHolePoints().toSet()
-    var validPoints = emptyList<Point>()
+    val validPoints = mutableMapOf<Point, Double>()
 
     val figureStack = stack<Figure>()
     figureStack.push(startingFigure)
@@ -327,6 +327,16 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
 
         val graphEdges = figure.calculatedEdges
 
+        for ((point, ratio) in validPoints) {
+            val (color, radius) = when (ratio) {
+                1.0 -> Color.GREEN to 1.5
+                else -> Color.PINK to (0.25 + 1.0 * ratio)
+            }
+            withPaint(color) {
+                fill(Ellipse2D(point, radius))
+            }
+        }
+
         for ((edge, oldEdge) in graphEdges.zip(startingFigure.calculatedEdges)) {
             val color = when {
                 checkCorrect(oldEdge, edge, problem.epsilon) -> Color.BLUE
@@ -345,16 +355,10 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
             }
         }
 
-        for (point in validPoints) {
-            withPaint(Color.GREEN) {
-                fill(Ellipse2D(point, 1.5))
-            }
-        }
-
         absolute {
             withPaint(Color.ORANGE) {
                 withFont(Font.decode("Fira-Mono-Bold-20")) {
-                    drawString("dislikes: ${dislikes(hole, figure.currentPose)}", 20.0f, 20.0f)
+                    drawString("dislikes: ${dislikes(hole, figure.currentPose)}", 20.0f, 30.0f)
                     if (currentCoordinates != null) {
                         drawString("current coordinates: x=${currentCoordinates!!.x}, y=${currentCoordinates!!.y}", 20.0f, 40.0f)
                     }
@@ -464,7 +468,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
             startingPoint = null
             startFigure = null
             currentCoordinates = null
-            validPoints = emptyList()
+            validPoints.clear()
             canvas.invokeRepaint()
         }
     ) { start, prev, e ->
@@ -474,16 +478,19 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
             startingPoint = startPoint
             startFigure = figure
             val pointEdges = startFigure!!.edges.filter { it.startIndex == startPoint.index || it.endIndex == startPoint.index }
-            validPoints = holePoints.filter {
+            holePoints.forEach {
                 val newFigure = figure.copy(vertices = figure.vertices.toMutableList().apply {
                     this[startPoint.index] = it
                 })
 
-                pointEdges.all { dataEdge ->
-                    val oldEdge = Edge(problem.figure.vertices[dataEdge.startIndex], problem.figure.vertices[dataEdge.endIndex])
+                val countCorrect = pointEdges.count { dataEdge ->
+                    val oldEdge = Edge(startingFigure.vertices[dataEdge.startIndex], startingFigure.vertices[dataEdge.endIndex])
                     val newEdge = Edge(newFigure.vertices[dataEdge.startIndex], newFigure.vertices[dataEdge.endIndex])
 
                     checkCorrect(oldEdge, newEdge, problem.epsilon)
+                }
+                if (countCorrect >= 1) {
+                    validPoints[it] = countCorrect.toDouble() / pointEdges.size
                 }
             }
         }
@@ -504,29 +511,3 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
 
 
 fun Point.to2D() = Point2D(x.toDouble(), y.toDouble())
-
-
-fun testHole(): List<Point2D> =
-    """
-        [0,4],[11,0],[21,12],[27,0],[41,1],[56,0],[104,0],[104,25],[93,29],[97,41],[104,53],[82,57],[67,57],[58,49],[40,57],[25,57],[12,53],[0,56]
-    """.trimIndent().split("],").map {
-        val (x, y) = it.trim().removePrefix("[").removeSuffix("]").split(",")
-        Point2D(x.trim().toInt(), y.trim().toInt())
-    }
-
-fun testFigure(): List<Pair<Point2D, Point2D>> {
-    val vertices = """
-        [26,37],[22,12],[2,20],[4,21],[5,0],[24,29],[25,12],[2,19],[5,23],[20,34],[0,46],[20,40]
-    """.trimIndent().split("],").map {
-        val (x, y) = it.trim().removePrefix("[").removeSuffix("]").split(",")
-        Point2D(x.trim().toInt(), y.trim().toInt())
-    }
-    val edges = """
-        [0,1],[0,3],[1,2],[2,4],[2,5],[3,5],[4,6],[5,7],[6,7],[6,8],[7,9],[8,10],[8,11],[9,10],[10,11]
-    """.trimIndent().split("],").map {
-        val (x, y) = it.trim().removePrefix("[").removeSuffix("]").split(",")
-        x.trim().toInt() to y.trim().toInt()
-    }
-    return edges.map { vertices[it.first] to vertices[it.second] }
-}
-

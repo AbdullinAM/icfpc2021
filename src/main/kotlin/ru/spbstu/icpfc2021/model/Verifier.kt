@@ -16,18 +16,22 @@ class Verifier(val problem: Problem) {
     }
 
     fun check(edge: Edge): Boolean {
-        return awtHole.hasIntersections(Line2D.Double(edge.start, edge.end))
+        return hasIntersections(holeSides, Line2D.Double(edge.start, edge.end))
     }
 
     val holeVertexes by lazy {
         problem.hole.toSet()
     }
 
+    val holeSides by lazy {
+        awtHole.sides().toList()
+    }
+
     fun check(figure: Figure): Status {
         for (edge in figure.calculatedEdges) {
             val awtLine = Line2D.Double(edge.start, edge.end)
 
-            if (awtHole.hasIntersections(awtLine)) return Status.OVERLAP
+            if (hasIntersections(holeSides, awtLine)) return Status.OVERLAP
         }
 
         return when {
@@ -38,6 +42,12 @@ class Verifier(val problem: Problem) {
 
     fun isOutOfBounds(p: Point): Boolean {
         if (p in holeVertexes) return false
+
+        for (side in holeSides) {
+            val rCCW = Line2D.relativeCCW(side.x1, side.y1, side.x2, side.y2, p.getX(), p.getY())
+
+            if (rCCW == 0) return false
+        }
 
         return !awtHole.contains(p.x, p.y)
     }
@@ -71,8 +81,8 @@ fun List<Point>.toPoly(): Polygon {
     return poly
 }
 
-fun Polygon.hasIntersections(line: Line2D.Double): Boolean {
-    val polyIt = this.getPathIterator(null) //Getting an iterator along the polygon path
+fun Polygon.sides(): Sequence<Line2D.Double> = sequence {
+    val polyIt = this@sides.getPathIterator(null) //Getting an iterator along the polygon path
 
     val coords = DoubleArray(6) //Double array with length 6 needed by iterator
     val firstCoords = DoubleArray(2) //First point (needed for closing polygon path)
@@ -99,10 +109,20 @@ fun Polygon.hasIntersections(line: Line2D.Double): Boolean {
                 currentLine = Line2D.Double(coords[0], coords[1], firstCoords[0], firstCoords[1])
             }
             else -> {
-                throw Exception("Unsupported PathIterator segment type.")
+                throw Exception("Unsupported PathIterator segment type")
             }
         }
 
+        yield(currentLine)
+
+        polyIt.next()
+    }
+}
+
+fun Polygon.hasIntersections(line: Line2D.Double): Boolean = hasIntersections(this.sides().toList(), line)
+
+fun hasIntersections(sides: List<Line2D.Double>, line: Line2D.Double): Boolean {
+    for (currentLine in sides) {
         val rCCW01 = Line2D.relativeCCW(
             currentLine.x1, currentLine.y1,
             currentLine.x2, currentLine.y2,
@@ -137,8 +157,6 @@ fun Polygon.hasIntersections(line: Line2D.Double): Boolean {
         } else if (currentLine.intersectsLine(line)) {
             return true
         }
-
-        polyIt.next()
     }
     return false
 }
