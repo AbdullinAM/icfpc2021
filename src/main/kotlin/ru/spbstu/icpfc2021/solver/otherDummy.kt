@@ -208,7 +208,8 @@ class OtherDummySolver(
         while (tryIdx++ < 100) {
             println("Start try $tryIdx")
             val initialCtx = randomInitialSeed()
-            val startingIdx = initialCtx.vertices.best() ?: return problem.figure
+            val randomInitialVertex = initialCtx.assigment.withIndex().filter { it.value != null }.map { it.index }.randomOrNull()
+            val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: return problem.figure
             val tryResult = searchVertex(startingIdx, initialCtx.withVertex(startingIdx)) ?: continue
             val tryFig = problem.figure.copy(vertices = tryResult.assigment.filterNotNull())
             if (saveResult(problem, tryFig) || result == null) {
