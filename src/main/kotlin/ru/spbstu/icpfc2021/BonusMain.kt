@@ -1,5 +1,11 @@
 package ru.spbstu.icpfc2021
 
+import edu.mcgill.kaliningraph.LGVertex
+import edu.mcgill.kaliningraph.LabeledEdge
+import edu.mcgill.kaliningraph.LabeledGraph
+import edu.mcgill.kaliningraph.show
+import guru.nidi.graphviz.attribute.Label
+import guru.nidi.graphviz.model.Link
 import ru.spbstu.icpfc2021.model.*
 import java.io.File
 
@@ -43,4 +49,22 @@ fun main(args: Array<String>) {
     val bonusInfo = BonusInfo(info)
 
     writeValue(File(res).writer(), bonusInfo)
+
+    var graph = LabeledGraph {}
+
+    for ((n, p) in problemMap) {
+        graph += LabeledGraph {
+            for (b in p.bonuses) {
+                LGVertex("$n") + MyLabeledEdge(LGVertex("$n"), LGVertex("${b.problem}"), "${b.bonus}")
+            }
+        }
+    }
+
+    graph.show()
+}
+
+class MyLabeledEdge(s: LGVertex, t: LGVertex, l: String) : LabeledEdge(s, t, l) {
+    override fun render(): Link {
+        return super.render().also { it.add(Label.of(label)) }
+    }
 }
