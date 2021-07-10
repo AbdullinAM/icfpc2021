@@ -355,6 +355,16 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
             }
         }
 
+        for (b in problem.bonuses) {
+            val color = when(b.bonus) {
+                BonusType.GLOBALIST -> Color.YELLOW
+                BonusType.BREAK_A_LEG -> Color.MAGENTA
+            }
+            withPaint(color) {
+                fill(Ellipse2D(b.position, 2.0))
+            }
+        }
+
         absolute {
             withPaint(Color.ORANGE) {
                 withFont(Font.decode("Fira-Mono-Bold-20")) {
