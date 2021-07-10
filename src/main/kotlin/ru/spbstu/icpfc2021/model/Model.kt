@@ -90,7 +90,7 @@ data class Problem(
     val hole: Hole,
     val figure: Figure,
     val epsilon: Int,
-    val bonuses: List<Bonus> = listOf(),
+    val bonuses: List<Bonus>? = null,
 
     @JsonIgnore
     val number: Int = 0

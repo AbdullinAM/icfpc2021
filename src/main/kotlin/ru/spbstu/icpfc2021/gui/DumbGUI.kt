@@ -355,13 +355,16 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null) {
             }
         }
 
-        for (b in problem.bonuses) {
+        for (b in problem.bonuses.orEmpty()) {
             val color = when(b.bonus) {
                 BonusType.GLOBALIST -> Color.YELLOW
                 BonusType.BREAK_A_LEG -> Color.MAGENTA
             }
             withPaint(color) {
                 fill(Ellipse2D(b.position, 2.0))
+            }
+            withPaint(Color.BLACK) {
+                draw(Ellipse2D(b.position, 2.0))
             }
         }
 
