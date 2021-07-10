@@ -39,7 +39,7 @@ class OtherDummySolver(
     val findAllSolutions: Boolean = false
 ) {
     val verifier = Verifier(problem)
-//    val canvas: TransformablePanel
+    val canvas: TransformablePanel
     val overlays = mutableListOf<Pair<Drawable, Color>>()
     val allPointsToEdges: MapToSet<Point, Edge> = MapToSet()
 //    val distancesToEdges: MDMap<BigInteger, MapToSet<Point, Edge>> = MDMap.withDefault { MapToSet() }
@@ -51,89 +51,89 @@ class OtherDummySolver(
 
     init {
 
-//        val figure = problem.figure
-//        val hole2DVertices = problem.hole.map { it.to2D() }
-//        canvas = dumbCanvas(1000, 1000) {
-//            withPaint(Color.GRAY.brighter().brighter()) {
-//                val hole2D = GeneralPath()
-//                hole2D.moveTo(hole2DVertices.first())
-//                for (point in hole2DVertices.drop(1)) hole2D.lineTo(point)
-//                hole2D.closePath()
-//                fill(hole2D)
-//            }
-//
-//            for (edge in figure.calculatedEdges) {
-//                withPaint(Color.BLUE) {
-//                    val line = java.awt.geom.Line2D.Double(edge.start, edge.end)
-//                    draw(Drawable.Shape(BasicStroke(0.2f).createStrokedShape(line)))
-//                }
-//            }
-//
-//            for ((index, point) in figure.vertices.withIndex()) {
-//                val color = if (verifier.isOutOfBounds(point)) Color.RED else Color.BLUE
-//                withPaint(color) {
-//                    fill(Ellipse2D(point, 2.0))
-//                    drawString("$index", point.x, point.y)
-//                }
-//            }
-//
-//            for (b in problem.bonuses.orEmpty()) {
-//                val color = when(b.bonus) {
-//                    BonusType.GLOBALIST -> Color.YELLOW
-//                    BonusType.BREAK_A_LEG -> Color.MAGENTA
-//                }
-//                withPaint(color) {
-//                    fill(Ellipse2D(b.position, 2.0))
-//                }
-//                withPaint(Color.BLACK) {
-//                    draw(Ellipse2D(b.position, 2.0))
-//                }
-//            }
-//
-//
-//            for ((overlay, color) in overlays) {
-//                withPaint(color) {
-//                    draw(overlay)
-//                }
-//            }
-//
-//        }
-//        canvas.scale(10.0)
-//        canvas.translate(20.0, 20.0)
-//        canvas.onKey("DOWN") {
-//            val ty = 20.0 / canvas.transform.scaleY
-//            canvas.translate(0.0, ty)
-//        }
-//        canvas.onKey("UP") {
-//            val ty = -20.0 / canvas.transform.scaleY
-//            canvas.translate(0.0, ty)
-//        }
-//        canvas.onKey("LEFT") {
-//            val tx = -20.0 / canvas.transform.scaleX
-//            canvas.translate(tx, 0.0)
-//        }
-//        canvas.onKey("RIGHT") {
-//            val tx = 20.0 / canvas.transform.scaleX
-//            canvas.translate(tx, 0.0)
-//        }
-//        canvas.onKey(KeyStroke.getKeyStroke('+', 0)) {
-//            canvas.scale(1.1)
-//        }
-//        canvas.onKey(KeyStroke.getKeyStroke('-', 0)) {
-//            canvas.scale(0.9)
-//        }
-//        canvas.onMouseWheel { e ->
-//            val rot = e.preciseWheelRotation
-//            val point = e.canvasPoint
-//            val scale = 1.0 - rot * 0.1
-//            canvas.zoomTo(point, scale)
-//        }
-//        canvas.onMousePan(filter = { SwingUtilities.isRightMouseButton(it) }) { _, prev, e ->
-//            val st = prev.canvasPoint
-//            val end = e.canvasPoint
-//            canvas.translate(end.x - st.x, end.y - st.y)
-//        }
-//        dumbFrame(canvas).defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        val figure = problem.figure
+        val hole2DVertices = problem.hole.map { it.to2D() }
+        canvas = dumbCanvas(1000, 1000) {
+            withPaint(Color.GRAY.brighter().brighter()) {
+                val hole2D = GeneralPath()
+                hole2D.moveTo(hole2DVertices.first())
+                for (point in hole2DVertices.drop(1)) hole2D.lineTo(point)
+                hole2D.closePath()
+                fill(hole2D)
+            }
+
+            for (edge in figure.calculatedEdges) {
+                withPaint(Color.BLUE) {
+                    val line = java.awt.geom.Line2D.Double(edge.start, edge.end)
+                    draw(Drawable.Shape(BasicStroke(0.2f).createStrokedShape(line)))
+                }
+            }
+
+            for ((index, point) in figure.vertices.withIndex()) {
+                val color = if (verifier.isOutOfBounds(point)) Color.RED else Color.BLUE
+                withPaint(color) {
+                    fill(Ellipse2D(point, 2.0))
+                    drawString("$index", point.x, point.y)
+                }
+            }
+
+            for (b in problem.bonuses.orEmpty()) {
+                val color = when(b.bonus) {
+                    BonusType.GLOBALIST -> Color.YELLOW
+                    BonusType.BREAK_A_LEG -> Color.MAGENTA
+                }
+                withPaint(color) {
+                    fill(Ellipse2D(b.position, 2.0))
+                }
+                withPaint(Color.BLACK) {
+                    draw(Ellipse2D(b.position, 2.0))
+                }
+            }
+
+
+            for ((overlay, color) in overlays) {
+                withPaint(color) {
+                    draw(overlay)
+                }
+            }
+
+        }
+        canvas.scale(10.0)
+        canvas.translate(20.0, 20.0)
+        canvas.onKey("DOWN") {
+            val ty = 20.0 / canvas.transform.scaleY
+            canvas.translate(0.0, ty)
+        }
+        canvas.onKey("UP") {
+            val ty = -20.0 / canvas.transform.scaleY
+            canvas.translate(0.0, ty)
+        }
+        canvas.onKey("LEFT") {
+            val tx = -20.0 / canvas.transform.scaleX
+            canvas.translate(tx, 0.0)
+        }
+        canvas.onKey("RIGHT") {
+            val tx = 20.0 / canvas.transform.scaleX
+            canvas.translate(tx, 0.0)
+        }
+        canvas.onKey(KeyStroke.getKeyStroke('+', 0)) {
+            canvas.scale(1.1)
+        }
+        canvas.onKey(KeyStroke.getKeyStroke('-', 0)) {
+            canvas.scale(0.9)
+        }
+        canvas.onMouseWheel { e ->
+            val rot = e.preciseWheelRotation
+            val point = e.canvasPoint
+            val scale = 1.0 - rot * 0.1
+            canvas.zoomTo(point, scale)
+        }
+        canvas.onMousePan(filter = { SwingUtilities.isRightMouseButton(it) }) { _, prev, e ->
+            val st = prev.canvasPoint
+            val end = e.canvasPoint
+            canvas.translate(end.x - st.x, end.y - st.y)
+        }
+        dumbFrame(canvas).defaultCloseOperation = JFrame.EXIT_ON_CLOSE
     }
 
     operator fun MapToSet<Point, Edge>.plusAssign(edge: Edge) {
@@ -196,8 +196,6 @@ class OtherDummySolver(
 
             result
         }
-//        dumbFrame(canvas).defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-
 //        println("NAHUYACHENO")
 //
 //        dumbCanvas {
@@ -243,31 +241,33 @@ class OtherDummySolver(
 //            }
 //        }
 //
-//        for (p in allHolePoints) {
-//            for (x in problem.figure.vertices.indices) {
-//                val isValid = verticesToEdges[x].all { e ->
-//                    val emil = e.calculate().squaredLength.big.millions
-//                    allPointsToEdges[p].any { distancesToEdges[emil].contains(it) }
-//                }
-//                if (isValid) validIndices[p] += x
-//            }
-//        }
-//
-//        repeat(3) {
-//            val entriesCopy = validIndices.inner.entries.toSet()
-//            entriesCopy.forEach { (p, ixs) ->
-//                val toRemove = ixs.retainAll { ix ->
-//                    verticesToEdges[ix].all { e ->
-//                        val emil = e.calculate().squaredLength.big.millions
-//                        allPointsToEdges[p].any {
-//                            distancesToEdges[emil].contains(it)
-//                                    && (e.endIndex in validIndices[it.start] && e.startIndex in validIndices[it.end]
-//                                    || e.startIndex in validIndices[it.end] && e.startIndex in validIndices[it.start])
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        for (p in allHolePoints) {
+            for (x in problem.figure.vertices.indices) {
+                val isValid = verticesToEdges[x].all { e ->
+                    val emil = e.calculate().squaredLength.big
+                    val allEdges = abstractSquares[emil].orEmpty().asSequence().map { Edge(it, p) }
+                    allEdges.any { !verifier.check(it) }
+                }
+                if (isValid) validIndices[p] += x
+            }
+        }
+////
+        repeat(3) {
+            val entriesCopy = validIndices.inner.entries.toSet()
+            entriesCopy.forEach { (p, ixs) ->
+                val toRemove = ixs.retainAll { ix ->
+                    verticesToEdges[ix].all { e ->
+                        val emil = e.calculate().squaredLength.big
+
+                        val allEdges = abstractSquares[emil].orEmpty().asSequence().map { Edge(it, p) }
+                        allEdges.any {
+                            (e.endIndex in validIndices[it.start] && e.startIndex in validIndices[it.end]
+                                    || e.startIndex in validIndices[it.end] && e.startIndex in validIndices[it.start])
+                        }
+                    }
+                }
+            }
+        }
 
 //        println("Start search: ${distancesToEdges.inner.values.sumOf { it.inner.values.sumOf { it.size } }}")
         println("Start search")
@@ -405,23 +405,23 @@ class OtherDummySolver(
     fun searchVertex(vid: Int, ctx: VertexCtx): VertexCtx? {
         val allAbstractEdges = verticesToEdges[vid]
         val allConcreteGroups = mutableMapOf<Point, MutableMap<DataEdge, Set<Edge>>>()
-        val currentVertexPossiblePoints = ctx.possiblePoints[vid]
+        val currentVertexPossiblePoints = ctx.possiblePoints[vid].filter { vid in validIndices[it] }
         // THIS IS FOR NEW YEAR!!!!!!!!!
 //        println("Assignments: ${ctx.assigment}")
 //        println("Current $vid")
-//        overlays.clear()
-//        for (possiblePoint in currentVertexPossiblePoints) {
-//            overlays += Drawable.Shape(Ellipse2D(possiblePoint, 0.5)) to Color.PINK.darker().darker()
-//        }
-//        for (assignment in ctx.assigment) {
-//            if (assignment != null) {
-//                overlays += Drawable.Shape(Ellipse2D(assignment, 2.0)) to Color.CYAN
-//            }
-//        }
-//        canvas.invokeRepaint()
+        overlays.clear()
+        for (possiblePoint in currentVertexPossiblePoints) {
+            overlays += Drawable.Shape(Ellipse2D(possiblePoint, 0.5)) to Color.PINK.darker().darker()
+        }
+        for (assignment in ctx.assigment) {
+            if (assignment != null) {
+                overlays += Drawable.Shape(Ellipse2D(assignment, 2.0)) to Color.CYAN
+            }
+        }
+        canvas.invokeRepaint()
 //        System.`in`.bufferedReader().readLine()
         for (abstractEdge in allAbstractEdges) {
-            val otherVertexPossiblePoints = ctx.possiblePoints[abstractEdge.oppositeVertex(vid)]
+            val otherVertexPossiblePoints = ctx.possiblePoints[abstractEdge.oppositeVertex(vid)].filter { vid in validIndices[it] }
             val possibleDistances = (abstractSquares[abstractEdge.calculate().squaredLength.big] ?: emptySet())
             val groupedConcreteEdges = currentVertexPossiblePoints.associateWith { startPoint ->
                 possibleDistances.mapNotNull { distance ->
