@@ -54,7 +54,7 @@ fun main(args: Array<String>) {
 
     for ((n, p) in problemMap) {
         graph += LabeledGraph {
-            for (b in p.bonuses) {
+            for (b in p.bonuses.orEmpty()) {
                 LGVertex("$n") + MyLabeledEdge(LGVertex("$n"), LGVertex("${b.problem}"), "${b.bonus}")
             }
         }
