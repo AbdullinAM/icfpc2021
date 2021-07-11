@@ -395,6 +395,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
                     if (currentCoordinates != null) {
                         drawString("current coordinates: x=${currentCoordinates!!.x}, y=${currentCoordinates!!.y}", 20.0f, 40.0f)
                     }
+                    drawString("invalid edges: ${verifier.countInvalidEdges(figure)}", 20.0f, 60.0f)
                 }
             }
         }
