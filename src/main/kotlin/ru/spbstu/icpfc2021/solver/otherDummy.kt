@@ -54,9 +54,11 @@ class OtherDummySolver(
 
     private val solverIsRunning = AtomicBoolean(true)
 
-    fun Set<Int>.best(): Int? = minByOrNull { v ->
-        verticesToEdges[v].size// { it.calculate().squaredLength }
-    }
+    fun Set<Int>.best(): Int? =
+//        maxByOrNull { v -> verticesToEdges[v].sumOf { it.calculate().squaredLength } }
+//        minByOrNull { v -> verticesToEdges[v].sumOf { it.calculate().squaredLength } }
+        minByOrNull { v -> verticesToEdges[v].size }
+//        maxByOrNull { v -> verticesToEdges[v].size }
 
     init {
 
@@ -228,7 +230,7 @@ class OtherDummySolver(
             var result: Figure? = previousSolution?.let { problem.figure.copy(vertices = it.vertices) }
             var tryIdx = 0
             while (tryIdx++ < retries) {
-                val score = result?.let { dislikes(problem.hole, it.currentPose)}
+                val score = result?.let { dislikes(problem.hole, it.currentPose) }
                 if (score != null && result != null && score == 0L) return result
                 println("Start try $tryIdx | ${score}}")
                 solverIsRunning.set(true)
@@ -319,11 +321,12 @@ class OtherDummySolver(
 
     private fun checkCanceled(): Boolean = !solverIsRunning.get()
 
-    fun searchVertex(vid: Int, ctx: VertexCtx): VertexCtx? {
+    fun searchVertex(vid: Int, ctx: VertexCtx, depth: Int = 0): VertexCtx? {
         if (checkCanceled()) return null
         val allAbstractEdges = verticesToEdges[vid]
         val allConcreteGroups = mutableMapOf<Point, MutableMap<DataEdge, Set<Edge>>>()
         val currentVertexPossiblePoints = ctx.possiblePoints[vid]
+        println("Search on depth: $depth | $vid | ${allAbstractEdges.size}")
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
             println("Assignments: ${ctx.assigment}")
@@ -339,31 +342,45 @@ class OtherDummySolver(
             }
             canvas.invokeRepaint()
         }
-        for (abstractEdge in allAbstractEdges) {
-            if (checkCanceled()) return null
-            val otherVertexPossiblePoints = ctx.possiblePoints[abstractEdge.oppositeVertex(vid)]
-            val possibleDistances = (abstractSquares[abstractEdge.calculate().squaredLength.big] ?: emptySet())
-            val groupedConcreteEdges = currentVertexPossiblePoints.associateWith { startPoint ->
+
+        val abstractEdgeDistanceGroups = allAbstractEdges.groupBy { it.calculate().squaredLength }
+        println("${abstractEdgeDistanceGroups.map { it.value.size }}")
+        for ((distance, abstractEdges) in abstractEdgeDistanceGroups) {
+            val allAllowedOtherVerticesPoints = hashSetOf<Point>()
+            for (abstractEdge in abstractEdges) {
+                val otherVertexPossiblePoints = ctx.possiblePoints[abstractEdge.oppositeVertex(vid)]
+                allAllowedOtherVerticesPoints += otherVertexPossiblePoints
+            }
+            val possibleDistances = (abstractSquares[distance.big] ?: emptySet())
+            val groupedConcretePossibleEndPoints = currentVertexPossiblePoints.associateWith { startPoint ->
                 possibleDistances.mapNotNull { distance ->
                     val endPoint = startPoint + distance
-                    if (endPoint !in otherVertexPossiblePoints) return@mapNotNull null
-                    val edge = when {
-                        abstractEdge.isReversed(vid) -> Edge(endPoint, startPoint)
-                        else -> Edge(startPoint, endPoint)
-                    }
-                    if (checkCanceled()) return null
-                    when {
-                        edge in validEdges -> edge
-                        !verifier.check(edge) -> edge.also { validEdges += it }
-                        else -> null
-                    }
+                    if (endPoint !in allAllowedOtherVerticesPoints) return@mapNotNull null
+                    endPoint
                 }
-            }.filterValues { it.isNotEmpty() }
-            for ((keyPoint, edges) in groupedConcreteEdges) {
-                val vertexEdges = allConcreteGroups.getOrPut(keyPoint) { mutableMapOf() }
-                vertexEdges[abstractEdge] = edges.toSet()
+            }
+            for ((startPoint, endPoints) in groupedConcretePossibleEndPoints) {
+                val vertexEdges = allConcreteGroups.getOrPut(startPoint) { mutableMapOf() }
+                for (abstractEdge in abstractEdges) {
+                    if (checkCanceled()) return null
+                    val otherVertexPossiblePoints = ctx.possiblePoints[abstractEdge.oppositeVertex(vid)]
+                    val concreteEdges = endPoints.mapNotNull { endPoint ->
+                        if (endPoint !in otherVertexPossiblePoints) return@mapNotNull null
+                        val edge = when {
+                            abstractEdge.isReversed(vid) -> Edge(endPoint, startPoint)
+                            else -> Edge(startPoint, endPoint)
+                        }
+                        when {
+                            edge in validEdges -> edge
+                            !verifier.check(edge) -> edge.also { validEdges += it }
+                            else -> null
+                        }
+                    }.toSet()
+                    vertexEdges[abstractEdge] = concreteEdges
+                }
             }
         }
+
         if (checkCanceled()) return null
         val possibleConcreteGroups = allConcreteGroups.filterValues { edges -> edges.keys == allAbstractEdges }
         val validAssignments = ctx.assigment.filterNotNull()
@@ -401,7 +418,7 @@ class OtherDummySolver(
                 }
                 return newCtx
             }
-            val res = searchVertex(nextVertex, newCtx.withVertex(nextVertex))
+            val res = searchVertex(nextVertex, newCtx.withVertex(nextVertex), depth + 1)
             if (res != null) return res
         }
         return null
