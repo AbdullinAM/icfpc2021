@@ -17,7 +17,7 @@ fun main(args: Array<String>) {
         return
     }
 
-    for (index in 1..106) {
+    for (index in 1..132) {
         val json = File("problems/$index.problem").readText()
         val problem = readProblem(index, json)
         try {
