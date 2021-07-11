@@ -195,7 +195,11 @@ class fuzzer(
         var bestSol = candidates.map {
             it to (dislikes(problem.hole, it.currentPose) + verifier.countInvalidEdges(it))
         }.minByOrNull { it.second }
-        bestSol = if (bestSol != null && verifier.check(bestSol.first) == Verifier.Status.OK) bestSol else null
+        bestSol = when {
+            invalidityMode -> bestSol
+            bestSol != null && verifier.check(bestSol.first) == Verifier.Status.OK -> bestSol
+            else -> null
+        }
         when {
             bestSol == null -> println("No solutions found =(")
             bestSol.second > baseline -> {
@@ -225,7 +229,17 @@ fun main(args: Array<String>) {
     println("$index.sol")
 
     val startFigure = problem.figure.copy(vertices = solution.vertices)
-    val fuzzer = fuzzer(problem, startFigure, strictlyLowerDislikes = true, invalidityMode = true)
+
+    val fuzzer = fuzzer(problem, startFigure,
+        strictlyLowerDislikes = args.contains("--strict"),
+        invalidityMode = args.contains("--invalid"))
+    if (args.contains("--no-gui")) {
+        while(true) {
+            fuzzer.fuzz()
+            saveResult(problem, fuzzer.currentFigure)
+        }
+        return
+    }
     val gui = drawFigure(problem, startFigure)
     while(true) {
         //System.`in`.bufferedReader().readLine()
