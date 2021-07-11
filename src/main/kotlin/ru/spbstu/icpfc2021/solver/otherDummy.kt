@@ -14,6 +14,7 @@ import java.awt.geom.GeneralPath
 import java.io.File
 import java.math.BigInteger
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JFrame
 import javax.swing.KeyStroke
@@ -50,7 +51,7 @@ class OtherDummySolver(
 ) {
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
-    val overlays = mutableListOf<Pair<Drawable, Color>>()
+    val overlays = ConcurrentHashMap<Drawable, Color>()
     val validEdges = hashSetOf<Edge>()
     lateinit var abstractSquares: Map<BigInteger, Set<Point>>
 
@@ -338,7 +339,7 @@ class OtherDummySolver(
             val assigment = assignments[i]
             when {
                 assigment != null -> setOf(assigment)
-                else -> randomlyReducePointSet(allHolePoints, Random.nextDouble(0.1, 1.0))
+                else -> allHolePoints//randomlyReducePointSet(allHolePoints, Random.nextDouble(0.1, 1.0))
             }
         }
         return VertexCtx(
@@ -410,8 +411,6 @@ class OtherDummySolver(
         }
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
-            println("Assignments: ${ctx.assigment}")
-            println("Current $vid")
             overlays.clear()
             for (possiblePoint in currentVertexPossiblePoints) {
                 overlays += Drawable.Shape(Ellipse2D(possiblePoint, 0.5)) to Color.PINK.darker().darker()

@@ -54,6 +54,12 @@ class Verifier(val problem: Problem) {
             check(to) != Status.OK || !checkCorrect(from, to, problem.epsilon)
         }
 
+    fun getInvalidEdges(figure: Figure): List<DataEdge> =
+        problem.figure.edges.zip(figure.calculatedEdges).filter { (data, to) ->
+            val from = Edge(problem.figure.vertices[data.startIndex], problem.figure.vertices[data.endIndex])
+            check(to) != Status.OK || !checkCorrect(from, to, problem.epsilon)
+        }.map { it.first }
+
     fun check(figure: Figure): Status {
         for (edge in figure.calculatedEdges) {
             val awtLine = Line2D.Double(edge.start, edge.end)

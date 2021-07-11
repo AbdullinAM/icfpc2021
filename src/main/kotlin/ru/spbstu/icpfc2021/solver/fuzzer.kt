@@ -175,7 +175,12 @@ class fuzzer(
 
     fun fuzz() {
         val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
-        val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random()).shuffled()
+        val seed: Int
+        if (invalidityMode) {
+            val invalidPoints = verifier.getInvalidEdges(currentFigure).flatMapTo(mutableSetOf()) { listOf(it.startIndex, it.endIndex) }
+            seed = invalidPoints.random()
+        } else seed = currentFigure.vertices.indices.random()
+        val randomPoints = randomPoints(numPoints, seed).shuffled()
         println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(randomPoints).map { newPoint ->
             currentFigure.run {
@@ -187,21 +192,22 @@ class fuzzer(
             }
         }
         val baseline = dislikes(problem.hole, currentFigure.currentPose) + verifier.countInvalidEdges(currentFigure)
-        val bestSol = candidates.map {
+        var bestSol = candidates.map {
             it to (dislikes(problem.hole, it.currentPose) + verifier.countInvalidEdges(it))
         }.minByOrNull { it.second }
+        bestSol = if (bestSol != null && verifier.check(bestSol.first) == Verifier.Status.OK) bestSol else null
         when {
             bestSol == null -> println("No solutions found =(")
             bestSol.second > baseline -> {
                 println("Cannot improve current solution")
                 if(!strictlyLowerDislikes && bestSol.second.toDouble() - baseline < baseline/20.0) {
                     currentFigure = bestSol.first
-                    println(currentFigure.toJsonString())
+                    println(currentFigure.currentPose.toJsonString())
                 }
             }
             else -> {
                 currentFigure = bestSol.first
-                println(currentFigure.toJsonString())
+                println(currentFigure.currentPose.toJsonString())
             }
         }
     }
