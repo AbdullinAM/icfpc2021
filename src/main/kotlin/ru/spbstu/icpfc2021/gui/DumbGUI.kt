@@ -2,6 +2,7 @@ package ru.spbstu.icpfc2021.gui
 
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.model.Point
+import ru.spbstu.icpfc2021.result.loadInvalidSolution
 import ru.spbstu.icpfc2021.result.loadSolution
 import ru.spbstu.icpfc2021.result.saveInvalidResult
 import ru.spbstu.icpfc2021.result.saveResult
@@ -439,6 +440,10 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
     }
     canvas.onKey("control L") {
         figure = loadSolution(problem)
+        canvas.invokeRepaint()
+    }
+    canvas.onKey("control shift L") {
+        figure = loadInvalidSolution(problem)
         canvas.invokeRepaint()
     }
     canvas.onKey("control Z") {

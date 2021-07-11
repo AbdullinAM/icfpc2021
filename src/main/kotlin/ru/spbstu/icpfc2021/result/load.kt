@@ -14,3 +14,12 @@ fun loadSolution(problem: Problem): Figure {
     val pose = readValue<Pose>(resultFile)
     return Figure(pose.vertices, problem.figure.edges)
 }
+
+
+fun loadInvalidSolution(problem: Problem): Figure {
+    val resultFile = File("solutions/${problem.number}.invalid.sol").also {
+        it.parentFile?.mkdirs()
+    }
+    val pose = readValue<Pose>(resultFile)
+    return Figure(pose.vertices, problem.figure.edges)
+}
