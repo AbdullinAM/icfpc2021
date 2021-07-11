@@ -72,19 +72,21 @@ class HoleFitter(val problem: Problem) {
 
             if (paths.isNotEmpty()) {
                 val res = mutableListOf<Pair<DataEdge, Edge>>()
+                val fixedVertexes = mutableSetOf<Int>()
 
                 val goodPath = paths.maxByOrNull { it.size }!!
                 matchingEdges.values.forEach { it.removeAll(goodPath) }
                 paths.clear()
 
                 res += goodPath.zip(currPiece)
+                fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
 
                 var curr = step
                 var next = curr + curr
 
                 while (next <= holeEdges.size) {
                     val currPiece = holeEdges.subList(0, step)
-                    findPath(holeEdges.subList(curr, next), matchingEdges, mutableSetOf(), linkedSetOf(), paths)
+                    findPath(holeEdges.subList(curr, next), matchingEdges, fixedVertexes, linkedSetOf(), paths)
 
                     if (paths.isNotEmpty()) {
                         val goodPath = paths.maxByOrNull { it.size }!!
@@ -92,6 +94,7 @@ class HoleFitter(val problem: Problem) {
                         paths.clear()
 
                         res += goodPath.zip(currPiece)
+                        fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
                     }
 
                     curr = next
