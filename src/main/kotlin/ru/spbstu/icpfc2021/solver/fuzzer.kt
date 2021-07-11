@@ -9,11 +9,10 @@ import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.MapToSet
 import ru.spbstu.wheels.ints
 import java.io.File
+import java.lang.Math.pow
 import java.math.BigInteger
 import javax.xml.crypto.Data
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.sqrt
+import kotlin.math.*
 import kotlin.random.Random
 
 fun <T> List<Set<T>>.cartesian(): MutableList<PersistentList<T>> =
@@ -129,7 +128,7 @@ class fuzzer(
             it.startIndex in pisToSet && it.endIndex in pisToSet
         }
 
-        val personalSets: List<Set<Point>> = pis.map { pi ->
+        val personalSets: MutableList<Set<Point>> = pis.mapTo(mutableListOf()) { pi ->
             val dataEdges = nodesToEdges[pi]
 
             val currentPos = currentFigure.vertices[pi]
@@ -146,10 +145,17 @@ class fuzzer(
                 candidates
             }.intersectAll()
         }
-        if (personalSets.any { it.isEmpty() }) return emptyList()
 
+        println("personalSets size = ${personalSets.map { it.size }}")
+        if (personalSets.any { it.isEmpty() }) return emptyList()
+        for (i in personalSets.indices) {
+            personalSets[i] = personalSets[i].shuffled().take(
+                pow(1000000.0, 1.0 / pis.size).roundToInt()
+            ).toSet()
+        }
         val cart = personalSets.cartesian()
-        cart.retainAll { solution ->
+        println("cart size = ${cart.sumOf { it.size }}")
+        return cart.filter { solution ->
             innerEdges.all { edge ->
                 val ourStartIndex = pis.indexOf(edge.startIndex)
                 val ourEndIndex = pis.indexOf(edge.endIndex)
@@ -158,13 +164,11 @@ class fuzzer(
                         && calculated.squaredLength.big.millions in problem.distanceToMillionsRange(edge.calculateOriginal().squaredLength.big)
             }
         }
-
-        return cart
     }
 
     fun fuzz() {
-        val numPoints = Random.nextInt(5) + 1
-        val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random())
+        val numPoints = Random.nextInt(10) + 1
+        val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random()).shuffled()
         println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(randomPoints).map { newPoint ->
             currentFigure.run {
