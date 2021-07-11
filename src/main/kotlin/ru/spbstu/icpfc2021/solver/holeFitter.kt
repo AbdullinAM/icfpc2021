@@ -46,7 +46,7 @@ class HoleFitter(val problem: Problem) {
                 val fee = fe.asEdge()
                 val fl = fee.squaredLength
 
-                if (areWithinEpsilon(hl, fl, problem.epsilon)) {
+                if (areWithinEpsilon(fl, hl, problem.epsilon)) {
                     matchingEdges.getOrPut(he) { mutableSetOf() }.add(fe)
                 }
             }
@@ -57,7 +57,7 @@ class HoleFitter(val problem: Problem) {
         val paths = mutableSetOf<LinkedHashSet<DataEdge>>()
 
         var step = holeEdges.size
-        val limit = 4
+        val limit = 3
 
         while (step > limit) {
             val currPiece = holeEdges.subList(0, step)
@@ -95,6 +95,8 @@ class HoleFitter(val problem: Problem) {
             step /= 2
         }
 
+        res.removeIf { it.isEmpty() }
+
         if (res.isNotEmpty()) println("Problem ${problem.number}: $res")
 
         return res
@@ -106,7 +108,7 @@ class HoleFitter(val problem: Problem) {
         path: LinkedHashSet<DataEdge>,
         paths: MutableSet<LinkedHashSet<DataEdge>>
     ) {
-        if (holeEdges.size <= 1) {
+        if (holeEdges.isEmpty()) {
             paths.add(path)
             return
         }
