@@ -276,13 +276,26 @@ class OtherDummySolver(
         }
         val possiblePoints = MutableList(vertexAmount) { i ->
             val assigment = assignments[i]
-            if (assigment == null) allHolePoints else setOf(assigment)
+            when {
+                assigment != null -> setOf(assigment)
+                else -> randomlyReducePointSet(allHolePoints, Random.nextDouble(0.1, 1.0))
+            }
         }
         return VertexCtx(
             possiblePoints.toPersistentList(),
             assignments.toPersistentList(),
             (0 until vertexAmount).toPersistentSet()
         )
+    }
+
+    private fun randomlyReducePointSet(original: Set<Point>, percent: Double): Set<Point> {
+        val pointSource = original.toList()
+        val points = hashSetOf<Point>()
+        val originalSize = original.size.toDouble()
+        while (points.size / originalSize < percent) {
+            points += pointSource.random()
+        }
+        return points
     }
 
     private fun singleTryMode(): Figure {
