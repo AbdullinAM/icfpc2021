@@ -260,7 +260,7 @@ class OtherDummySolver(
                     (0 until problem.figure.vertices.size).toPersistentSet()
                 )
 
-                val startingIdx = vctx.vertices.bestLongestPaths() ?: return problem.figure
+                val startingIdx = vctx.vertices.randomBest() ?: return problem.figure
                 firstIteration = true
                 val tryResult = searchVertex(startingIdx, vctx.withVertex(startingIdx))
                 cancelation.cancel()
@@ -308,6 +308,7 @@ class OtherDummySolver(
                     .map { it.index }
                     .randomOrNull()
                 val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
+                firstIteration = true
                 val tryResult = searchVertex(startingIdx, initialCtx.withVertex(startingIdx))
                 cancelation.cancel()
                 tryResult ?: continue
