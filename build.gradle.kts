@@ -31,6 +31,6 @@ tasks.getByName<Test>("test") {
 }
 
 application {
-    val mainClassName = project.findProperty("mainClass") as? String ?: "ru.spbstu.icpfc2021.IntervalFuzzerkt"
+    val mainClassName = project.findProperty("mainClass") as? String ?: "ru.spbstu.icpfc2021.IntervalFuzzerKt"
     mainClass.set(mainClassName)
 }
