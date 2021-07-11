@@ -49,6 +49,11 @@ class Verifier(val problem: Problem) {
         return Status.OK
     }
 
+    fun countInvalidEdges(figure: Figure): Int =
+        problem.figure.calculatedEdges.zip(figure.calculatedEdges).count { (from, to) ->
+            check(to) != Status.OK || !checkCorrect(from, to, problem.epsilon)
+        }
+
     fun check(figure: Figure): Status {
         for (edge in figure.calculatedEdges) {
             val awtLine = Line2D.Double(edge.start, edge.end)
