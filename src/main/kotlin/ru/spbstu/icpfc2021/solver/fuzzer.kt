@@ -174,7 +174,7 @@ class fuzzer(
     }
 
     fun fuzz() {
-        val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
+        val numPoints = (Random.nextInt(minOf(2, currentFigure.vertices.size)) + 1)
         val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random()).shuffled()
         println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(randomPoints).map { newPoint ->
@@ -196,12 +196,12 @@ class fuzzer(
                 println("Cannot improve current solution")
                 if(!strictlyLowerDislikes && bestSol.second.toDouble() - baseline < baseline/20.0) {
                     currentFigure = bestSol.first
-                    println(currentFigure.toJsonString())
+                    println(currentFigure.currentPose.toJsonString())
                 }
             }
             else -> {
                 currentFigure = bestSol.first
-                println(currentFigure.toJsonString())
+                println(currentFigure.currentPose.toJsonString())
             }
         }
     }
