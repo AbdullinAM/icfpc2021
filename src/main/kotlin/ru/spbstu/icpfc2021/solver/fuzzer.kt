@@ -153,7 +153,7 @@ class fuzzer(
         if (constrainSearchSpace) {
             for (i in personalSets.indices) {
                 personalSets[i] = personalSets[i].shuffled().take(
-                    pow(10000000.0, 1.0 / pis.size).roundToInt()
+                    pow(4000000.0, 1.0 / pis.size).roundToInt()
                 ).toSet()
             }
         }
