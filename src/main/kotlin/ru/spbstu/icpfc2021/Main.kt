@@ -17,9 +17,8 @@ fun main(args: Array<String>) {
         Verifier(problem).getHolePoints().toSet(),
         problem,
         findAllSolutions = false,
-        showGraphics = true,
-        mode = SolverMode.RANDOM,
-        useHoleFitter = true,
+        showGraphics = false,
+        mode = SolverMode.HOLE_FITTER,
         optimizeFirstIteration = false,
     )
     val figure = solver.solve()
