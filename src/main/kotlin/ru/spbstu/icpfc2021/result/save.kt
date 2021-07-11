@@ -40,6 +40,18 @@ fun saveResult(problem: Problem, figure: Figure): Boolean {
     }
 }
 
+fun saveInvalidResult(problem: Problem, figure: Figure): Boolean {
+    val resultFile = File("solutions/${problem.number}.invalid.sol").also {
+        it.parentFile?.mkdirs()
+    }
+
+    val currentPose = figure.currentPose
+    resultFile.writeText(currentPose.toJsonString())
+    println("Invalid saved")
+    return true
+}
+
+
 fun mergeResults(problemFolder: String, outputFolder: String, vararg solutionFolders: String) {
     val problems = File(problemFolder).listFiles()?.map { readProblem(it.nameWithoutExtension.toInt(), it.readText()) }
         ?: throw IllegalStateException()

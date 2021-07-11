@@ -3,6 +3,7 @@ package ru.spbstu.icpfc2021.gui
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.model.Point
 import ru.spbstu.icpfc2021.result.loadSolution
+import ru.spbstu.icpfc2021.result.saveInvalidResult
 import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.Stack
 import ru.spbstu.wheels.stack
@@ -422,6 +423,10 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
     canvas.onKey("control S") {
         println(figure.currentPose.toJsonString())
         saveResult(problem, figure)
+    }
+    canvas.onKey("control shift S") {
+        println(figure.currentPose.toJsonString())
+        saveInvalidResult(problem, figure)
     }
     canvas.onKey("control L") {
         figure = loadSolution(problem)

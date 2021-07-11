@@ -8,15 +8,18 @@ import ru.spbstu.icpfc2021.gui.*
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.MapToSet
+import ru.spbstu.wheels.NullableMonad.filter
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Font
 import java.awt.geom.GeneralPath
+import java.awt.geom.Point2D
 import java.io.File
 import java.math.BigInteger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JFrame
 import javax.swing.KeyStroke
 import javax.swing.SwingUtilities
@@ -54,6 +57,7 @@ class OtherDummySolver(
     val canvas: TransformablePanel
     val overlays = ConcurrentHashMap<Drawable, Color>()
     val validEdges = hashSetOf<Edge>()
+    val target: AtomicReference<Point?> = AtomicReference(null)
     lateinit var abstractSquares: Map<BigInteger, Set<Point>>
 
     private val solverIsRunning = AtomicBoolean(true)
@@ -151,6 +155,9 @@ class OtherDummySolver(
         canvas.onKey("control C") {
             solverIsRunning.set(false)
         }
+        canvas.onKey("control L") {
+            target.set(null)
+        }
         canvas.onMouseWheel { e ->
             val rot = e.preciseWheelRotation
             val point = e.canvasPoint
@@ -161,6 +168,9 @@ class OtherDummySolver(
             val st = prev.canvasPoint
             val end = e.canvasPoint
             canvas.translate(end.x - st.x, end.y - st.y)
+        }
+        canvas.onMousePan(filter = { SwingUtilities.isLeftMouseButton(it) }) { _, prev, e ->
+            target.set(prev.canvasPoint.round())
         }
         if (showGraphics) {
             dumbFrame(canvas).defaultCloseOperation = JFrame.EXIT_ON_CLOSE
@@ -309,7 +319,7 @@ class OtherDummySolver(
                 timer.schedule(cancelation, tryDuration.inWholeMilliseconds)
                 val initialCtx = randomInitialSeed()
                 val randomInitialVertex = initialCtx.assigment.withIndex()
-                    .filter { it.value != null }
+                    .filter { it: IndexedValue<Point?> -> it.value != null }
                     .map { it.index }
                     .randomOrNull()
                 val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
@@ -332,7 +342,8 @@ class OtherDummySolver(
         val assignments = MutableList<Point?>(vertexAmount) { null }
         val bound = minOf(vertexAmount, holeVertices.size, 5)
         for (i in 0..Random.nextInt(1, bound)) {
-            val emptyVertices = assignments.withIndex().filter { it.value == null }.map { it.index }
+            val emptyVertices =
+                assignments.withIndex().filter { it: IndexedValue<Point?> -> it.value == null }.map { it.index }
             val vertex = emptyVertices.random()
             val point = holeVertices.random()
             holeVertices -= point
@@ -351,6 +362,28 @@ class OtherDummySolver(
             (0 until vertexAmount).toPersistentSet()
         )
     }
+
+    private fun manualInvalidSeed(): VertexCtx {
+        val vertexAmount = problem.figure.vertices.size
+        val invalidResult = readValue<Pose>(File("solutions/${problem.number}.invalid.sol"))
+        val assignments = problem.figure.vertices.zip(invalidResult.vertices) { a, b ->
+            if (a == b) null else b
+        }.toPersistentList()
+
+        val possiblePoints = MutableList(vertexAmount) { i ->
+            val assigment = assignments[i]
+            when {
+                assigment != null -> setOf(assigment)
+                else -> allHolePoints//randomlyReducePointSet(allHolePoints, Random.nextDouble(0.1, 1.0))
+            }
+        }
+        return VertexCtx(
+            possiblePoints.toPersistentList(),
+            assignments.toPersistentList(),
+            (0 until vertexAmount).toPersistentSet()
+        )
+    }
+
 
     private fun randomlyReducePointSet(original: Set<Point>, percent: Double): Set<Point> {
         val pointSource = original.toList()
@@ -410,7 +443,7 @@ class OtherDummySolver(
         // this is fucked up, but it really increases first iteration speed
         if (firstIteration && optimizeFirstIteration) {
             firstIteration = false
-            currentVertexPossiblePoints = currentVertexPossiblePoints.filter { it in problem.hole }.toSet()
+            currentVertexPossiblePoints = currentVertexPossiblePoints.filter { it: Point -> it in problem.hole }.toSet()
         }
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
@@ -455,12 +488,17 @@ class OtherDummySolver(
         val validAssignments = ctx.assigment.filterNotNull()
         val holeVertices = problem.hole.toSet() - validAssignments
         val bonusVertices = problem.bonuses.orEmpty().toSet() - validAssignments
+        val currentTarget = target.get()
         val possibleConcreteGroupsWithHolePriority = when {
             sufflePossibleEntries -> possibleConcreteGroups.entries.shuffled()
             else -> possibleConcreteGroups.entries
         }.sortedWith(
             compareBy<Map.Entry<Point, *>> {
                 (it.key in holeVertices).toInt()
+            }.thenBy { (key, _) ->
+                -(currentTarget?.let {
+                    key.distance(it.to2D())
+                } ?: 0.0)
             }.thenBy {
                 validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
             }.thenBy {
