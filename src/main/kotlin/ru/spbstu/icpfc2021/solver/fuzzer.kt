@@ -194,6 +194,7 @@ class fuzzer(
             }
         }
         totalBestScore = minOf(totalBestScore, dislikes(problem.hole, currentFigure.currentPose) + verifier.countInvalidEdges(currentFigure))
+
         var bestSol = candidates.map {
             it to (dislikes(problem.hole, it.currentPose) + verifier.countInvalidEdges(it))
         }.minByOrNull { it.second }
@@ -206,7 +207,7 @@ class fuzzer(
             bestSol == null -> println("No solutions found =(")
             bestSol.second > totalBestScore -> {
                 println("Cannot improve current solution")
-                if(!strictlyLowerDislikes && bestSol.second.toDouble() - totalBestScore < totalBestScore/20.0) {
+                if(!strictlyLowerDislikes && bestSol.second.toDouble() - totalBestScore < totalBestScore/10.0) {
                     currentFigure = bestSol.first
                     println(currentFigure.currentPose.toJsonString())
                 }
@@ -239,6 +240,11 @@ fun main(args: Array<String>) {
         while(true) {
             fuzzer.fuzz()
             saveResult(problem, fuzzer.currentFigure)
+
+            if (fuzzer.totalBestScore == 0L) {
+                println("Guess, we're done here")
+                return
+            }
         }
         return
     }
@@ -250,5 +256,10 @@ fun main(args: Array<String>) {
         gui.invokeRepaint()
 
         saveResult(problem, fuzzer.currentFigure)
+
+        if (fuzzer.totalBestScore == 0L) {
+            println("Guess, we're done here")
+            return
+        }
     }
 }
