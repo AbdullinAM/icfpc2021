@@ -124,7 +124,7 @@ fun readProblem(number: Int, json: String): Problem = readValue<Problem>(json).c
 inline fun <reified T> writeValue(w: Writer, value: T) = om.writeValue(w, value)
 inline fun <reified T> T.toJsonString() = om.writeValueAsString(this)
 
-enum class BonusType { GLOBALIST, BREAK_A_LEG, WALLHACK }
+enum class BonusType { GLOBALIST, BREAK_A_LEG, WALLHACK, SUPERFLEX }
 
 data class Bonus(
     val position: Point,

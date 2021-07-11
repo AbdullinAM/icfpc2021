@@ -102,6 +102,7 @@ class OtherDummySolver(
                     BonusType.GLOBALIST -> Color.YELLOW
                     BonusType.BREAK_A_LEG -> Color.MAGENTA
                     BonusType.WALLHACK -> Color.ORANGE
+                    BonusType.SUPERFLEX -> Color.CYAN
                 }
                 withPaint(color) {
                     fill(Ellipse2D(b.position, 2.0))
@@ -227,8 +228,8 @@ class OtherDummySolver(
 
     @OptIn(ExperimentalTime::class)
     private fun dummyRandom(): Figure {
-        val retries = 1000
-        val tryDuration = Duration.Companion.minutes(30)
+        val retries = 100
+        val tryDuration = Duration.Companion.minutes(5)
         val timer = Timer()
         return run {
             val resultFile = File("solutions/${problem.number}.sol").also {
@@ -260,7 +261,7 @@ class OtherDummySolver(
                     (0 until problem.figure.vertices.size).toPersistentSet()
                 )
 
-                val startingIdx = vctx.vertices.bestLongestPaths() ?: return problem.figure
+                val startingIdx = vctx.vertices.randomBest() ?: return problem.figure
                 firstIteration = true
                 val tryResult = searchVertex(startingIdx, vctx.withVertex(startingIdx))
                 cancelation.cancel()
@@ -308,6 +309,7 @@ class OtherDummySolver(
                     .map { it.index }
                     .randomOrNull()
                 val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
+                firstIteration = true
                 val tryResult = searchVertex(startingIdx, initialCtx.withVertex(startingIdx))
                 cancelation.cancel()
                 tryResult ?: continue

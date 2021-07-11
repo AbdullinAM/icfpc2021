@@ -375,6 +375,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
                 BonusType.GLOBALIST -> Color.YELLOW
                 BonusType.BREAK_A_LEG -> Color.MAGENTA
                 BonusType.WALLHACK -> Color.ORANGE
+                BonusType.SUPERFLEX -> Color.CYAN
             }
             color = when {
                 acquired -> color.darker()
