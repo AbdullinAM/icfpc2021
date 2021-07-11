@@ -225,7 +225,17 @@ fun main(args: Array<String>) {
     println("$index.sol")
 
     val startFigure = problem.figure.copy(vertices = solution.vertices)
-    val fuzzer = fuzzer(problem, startFigure, strictlyLowerDislikes = true, invalidityMode = true)
+
+    val fuzzer = fuzzer(problem, startFigure,
+        strictlyLowerDislikes = args.contains("--strict"),
+        invalidityMode = args.contains("--invalid"))
+    if (args.contains("--no-gui")) {
+        while(true) {
+            fuzzer.fuzz()
+            saveResult(problem, fuzzer.currentFigure)
+        }
+        return
+    }
     val gui = drawFigure(problem, startFigure)
     while(true) {
         //System.`in`.bufferedReader().readLine()

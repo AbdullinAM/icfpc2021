@@ -10,6 +10,7 @@ import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.MapToSet
 import java.awt.BasicStroke
 import java.awt.Color
+import java.awt.Font
 import java.awt.geom.GeneralPath
 import java.io.File
 import java.math.BigInteger
@@ -94,7 +95,9 @@ class OtherDummySolver(
                 val color = if (verifier.isOutOfBounds(point)) Color.RED else Color.BLUE
                 withPaint(color) {
                     fill(Ellipse2D(point, 2.0))
-                    drawString("$index", point.x, point.y)
+                    withFont(Font.decode("Fira-Mono-Bold-8")) {
+                        drawString("$index", point.x, point.y)
+                    }
                 }
             }
 
