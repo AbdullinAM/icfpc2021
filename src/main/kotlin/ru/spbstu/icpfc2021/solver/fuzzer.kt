@@ -36,7 +36,9 @@ fun <T> Collection<MutableSet<T>>.intersectAll(): MutableSet<T> {
 
 class fuzzer(
     val problem: Problem,
-    var currentFigure: Figure = problem.figure
+    var currentFigure: Figure = problem.figure,
+    val constrainSearchSpace: Boolean = true,
+    val strictlyLowerDislikes: Boolean = false
 ) {
 
     val verifier = Verifier(problem)
@@ -148,10 +150,12 @@ class fuzzer(
 
         println("personalSets size = ${personalSets.map { it.size }}")
         if (personalSets.any { it.isEmpty() }) return emptyList()
-        for (i in personalSets.indices) {
-            personalSets[i] = personalSets[i].shuffled().take(
-                pow(1000000.0, 1.0 / pis.size).roundToInt()
-            ).toSet()
+        if (constrainSearchSpace) {
+            for (i in personalSets.indices) {
+                personalSets[i] = personalSets[i].shuffled().take(
+                    pow(1000000.0, 1.0 / pis.size).roundToInt()
+                ).toSet()
+            }
         }
         val cart = personalSets.cartesian()
         println("cart size = ${cart.sumOf { it.size }}")
@@ -167,7 +171,7 @@ class fuzzer(
     }
 
     fun fuzz() {
-        val numPoints = Random.nextInt(10) + 1
+        val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
         val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random()).shuffled()
         println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(randomPoints).map { newPoint ->
@@ -183,7 +187,12 @@ class fuzzer(
         val bestSol = candidates.map { it to dislikes(problem.hole, it.currentPose) }.minByOrNull { it.second }
         when {
             bestSol == null -> println("No solutions found =(")
-            bestSol.second > baseline -> println("Cannot improve current solution")
+            bestSol.second > baseline -> {
+                println("Cannot improve current solution")
+                if(!strictlyLowerDislikes && bestSol.second.toDouble() - baseline < baseline/20.0) {
+                    currentFigure = bestSol.first
+                }
+            }
             else -> currentFigure = bestSol.first
         }
     }
