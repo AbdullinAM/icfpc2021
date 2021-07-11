@@ -25,6 +25,7 @@ import com.jme3.util.BufferUtils
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.solver.cartesian
 import java.io.File
+import kotlin.math.sqrt
 
 
 fun main(args: Array<String>) {
@@ -63,7 +64,12 @@ class TestRagDoll(val problem: Problem) : SimpleApplication(), ActionListener {
     private fun createRagDoll() {
 
         for (edge in problem.figure.edges) {
-            edgeLimbs[edge] = createLimb(0.1f, 1.0f, edge.calculate().start.vec(), false)
+            edgeLimbs[edge] = createLimb(
+                sqrt(edge.calculate().squaredLength.toFloat()),
+                0.1f, //                sqrt(edge.calculate().squaredLength.toFloat()),
+                edge.calculate().start.vec(),
+                false
+            )
         }
         val joints = mutableListOf<PhysicsJoint>()
         for ((i, vertex) in problem.figure.vertices.withIndex()) {
@@ -141,7 +147,8 @@ class TestRagDoll(val problem: Problem) : SimpleApplication(), ActionListener {
         val material = Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")
 //        material.setTexture("ColorMap", assetManager.loadTexture("Interface/Logo/Monkey.jpg"))
 
-        val floorBox = createFloorMesh(5, 2f)
+//        val floorBox = createFloorMesh(5, 2f)
+        val floorBox = Box(140f, 0.25f, 140f)
         val floorGeometry = Geometry("Floor", floorBox)
         floorGeometry.material = material
         floorGeometry.setLocalTranslation(0f, -5f, 0f)
