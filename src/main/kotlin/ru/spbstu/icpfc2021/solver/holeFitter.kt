@@ -1,6 +1,7 @@
 package ru.spbstu.icpfc2021.solver
 
 import ru.spbstu.icpfc2021.model.*
+import ru.spbstu.wheels.toMutableMap
 import java.io.File
 
 fun main(args: Array<String>) {
@@ -13,7 +14,9 @@ fun main(args: Array<String>) {
 
         val hf = HoleFitter(problem)
 
-        hf.fit()
+        val res = hf.fit().toList()
+
+        if (res.isNotEmpty()) println("Problem ${problem.number}: $res")
 
         return
     }
@@ -24,7 +27,9 @@ fun main(args: Array<String>) {
 
         val hf = HoleFitter(problem)
 
-        hf.fit()
+        val res = hf.fit().toList()
+
+        if (res.isNotEmpty()) println("Problem ${problem.number}: $res")
     }
 }
 
@@ -32,12 +37,14 @@ class HoleFitter(val problem: Problem) {
 
     val verifier = Verifier(problem)
 
-    fun fit(): List<List<Pair<DataEdge, Edge>>> {
+    fun fit(): Sequence<List<Pair<DataEdge, Edge>>> = sequence {
+        if (problem.number == 70) return@sequence
+
         val holeEdges = (problem.hole + problem.hole.first()).zipWithNext { a, b ->
             Edge(a, b)
         }
 
-        val matchingEdges = mutableMapOf<Edge, MutableSet<DataEdge>>()
+        val startingMatchingEdges = mutableMapOf<Edge, MutableSet<DataEdge>>()
 
         for (he in holeEdges) {
             val hl = he.squaredLength
@@ -47,23 +54,25 @@ class HoleFitter(val problem: Problem) {
                 val fl = fee.squaredLength
 
                 if (areWithinEpsilon(fl, hl, problem.epsilon)) {
-                    matchingEdges.getOrPut(he) { mutableSetOf() }.add(fe)
+                    startingMatchingEdges.getOrPut(he) { mutableSetOf() }.add(fe)
                 }
             }
         }
-
-        val res = mutableListOf<List<Pair<DataEdge, Edge>>>()
-
-        val paths = mutableSetOf<List<DataEdge>>()
 
         var step = holeEdges.size
         val limit = 3
 
         while (step > limit) {
+            val paths = mutableSetOf<List<DataEdge>>()
+
+            val matchingEdges = startingMatchingEdges.map { it.key to it.value.toMutableSet() }.toMutableMap()
+
             val currPiece = holeEdges.subList(0, step)
             findPath(currPiece, matchingEdges, mutableSetOf(), linkedSetOf(), paths)
 
             if (paths.isNotEmpty()) {
+                val res = mutableListOf<Pair<DataEdge, Edge>>()
+
                 val goodPath = paths.maxByOrNull { it.size }!!
                 matchingEdges.values.forEach { it.removeAll(goodPath) }
                 paths.clear()
@@ -89,17 +98,13 @@ class HoleFitter(val problem: Problem) {
                     next = curr + step
                 }
 
-                break
+                yield(res)
             }
 
             step /= 2
         }
 
-        res.removeIf { it.isEmpty() }
-
-        if (res.isNotEmpty()) println("Problem ${problem.number}: $res")
-
-        return res
+        return@sequence
     }
 
     fun findPath(
