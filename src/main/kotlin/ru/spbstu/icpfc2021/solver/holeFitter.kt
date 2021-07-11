@@ -82,11 +82,11 @@ class HoleFitter(val problem: Problem) {
                 fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
 
                 var curr = step
-                var next = curr + curr
+                var next = curr + step
 
                 while (next <= holeEdges.size) {
-                    val currPiece = holeEdges.subList(0, step)
-                    findPath(holeEdges.subList(curr, next), matchingEdges, fixedVertexes, linkedSetOf(), paths)
+                    val currPiece = holeEdges.subList(curr, next)
+                    findPath(currPiece, matchingEdges, fixedVertexes, linkedSetOf(), paths)
 
                     if (paths.isNotEmpty()) {
                         val goodPath = paths.maxByOrNull { it.size }!!
@@ -104,7 +104,7 @@ class HoleFitter(val problem: Problem) {
                 yield(res)
             }
 
-            step /= 2
+            step -= 1
         }
 
         return@sequence
