@@ -59,6 +59,10 @@ class OtherDummySolver(
 
     fun Set<Int>.randomBest(): Int? = randomOrNull()
 
+    fun Set<Int>.bestLongestPaths(): Int? = maxByOrNull {
+        verticesToEdges[it].sumOf { edge -> edge.calculate().squaredLength }
+    }
+
     fun Set<Int>.bestSmallestEdges(): Int? = minByOrNull {
         verticesToEdges[it].size
     }
@@ -138,6 +142,9 @@ class OtherDummySolver(
         }
         canvas.onKey(KeyStroke.getKeyStroke('-', 0)) {
             canvas.scale(0.9)
+        }
+        canvas.onKey("control C") {
+            solverIsRunning.set(false)
         }
         canvas.onMouseWheel { e ->
             val rot = e.preciseWheelRotation
@@ -221,7 +228,7 @@ class OtherDummySolver(
     @OptIn(ExperimentalTime::class)
     private fun dummyRandom(): Figure {
         val retries = 1000
-        val tryDuration = Duration.Companion.minutes(3)
+        val tryDuration = Duration.Companion.minutes(30)
         val timer = Timer()
         return run {
             val resultFile = File("solutions/${problem.number}.sol").also {
@@ -253,7 +260,7 @@ class OtherDummySolver(
                     (0 until problem.figure.vertices.size).toPersistentSet()
                 )
 
-                val startingIdx = vctx.vertices.randomBest() ?: return problem.figure
+                val startingIdx = vctx.vertices.bestLongestPaths() ?: return problem.figure
                 firstIteration = true
                 val tryResult = searchVertex(startingIdx, vctx.withVertex(startingIdx))
                 cancelation.cancel()
@@ -429,7 +436,7 @@ class OtherDummySolver(
                     if (checkCanceled()) return null
                     when {
                         edge in validEdges -> edge
-                        !verifier.check(edge) -> edge.also { validEdges += it }
+                        verifier.check(edge) == Verifier.Status.OK -> edge.also { validEdges += it }
                         else -> null
                     }
                 }
@@ -443,6 +450,7 @@ class OtherDummySolver(
         val possibleConcreteGroups = allConcreteGroups.filterValues { edges -> edges.keys == allAbstractEdges }
         val validAssignments = ctx.assigment.filterNotNull()
         val holeVertices = problem.hole.toSet() - validAssignments
+        val bonusVertices = problem.bonuses.orEmpty().toSet() - validAssignments
         val possibleConcreteGroupsWithHolePriority = when {
             sufflePossibleEntries -> possibleConcreteGroups.entries.shuffled()
             else -> possibleConcreteGroups.entries
@@ -451,6 +459,8 @@ class OtherDummySolver(
                 (it.key in holeVertices).toInt()
             }.thenBy {
                 validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
+            }.thenBy {
+                it in bonusVertices
             }.reversed()
         )
         for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
