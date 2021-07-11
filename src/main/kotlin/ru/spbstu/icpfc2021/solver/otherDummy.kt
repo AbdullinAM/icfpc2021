@@ -90,6 +90,7 @@ class OtherDummySolver(
                 val color = when (b.bonus) {
                     BonusType.GLOBALIST -> Color.YELLOW
                     BonusType.BREAK_A_LEG -> Color.MAGENTA
+                    BonusType.WALLHACK -> Color.ORANGE
                 }
                 withPaint(color) {
                     fill(Ellipse2D(b.position, 2.0))
