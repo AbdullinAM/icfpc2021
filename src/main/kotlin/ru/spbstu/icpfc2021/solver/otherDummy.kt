@@ -316,12 +316,12 @@ class OtherDummySolver(
         return run {
             var result: Figure? = currentBestSolutionFigure()
             var tryIdx = 0
+            val seedSequence = holeFitterInitialSeed().iterator()
             while (tryIdx++ < retries) {
                 val score = result?.let { dislikes(problem.hole, it.currentPose) }
                 if (score != null && result != null && score == 0L) return result
                 println("Start try $tryIdx | ${score}}")
-
-                val initialCtx = holeFitterInitialSeed()
+                val initialCtx = seedSequence.next()
                 val randomInitialVertex = initialCtx.possiblePoints.withIndex()
                     .minByOrNull { it.value.size }?.index
                 val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
@@ -368,31 +368,32 @@ class OtherDummySolver(
         return previousSolution?.let { problem.figure.copy(vertices = it.vertices) }
     }
 
-    private fun holeFitterInitialSeed(): VertexCtx {
+    private fun holeFitterInitialSeed() = sequence {
         val vertexAmount = problem.figure.vertices.size
-        val assignments = MutableList<Point?>(vertexAmount) { null }
         val hf = HoleFitter(problem)
-
         val fit = hf.fit()
-
-        for (path in fit) {
-            for ((de, e) in path) {
-                assignments[de.startIndex] = e.start
-                assignments[de.endIndex] = e.end
+        while (true) {
+            for (path in fit) {
+                val assignments = MutableList<Point?>(vertexAmount) { null }
+                for ((de, e) in path) {
+                    assignments[de.startIndex] = e.start
+                    assignments[de.endIndex] = e.end
+                }
+                val possiblePoints = MutableList(vertexAmount) { i ->
+                    val assigment = assignments[i]
+                    when {
+                        assigment != null -> setOf(assigment)
+                        else -> allHolePoints
+                    }
+                }
+                val ctx = VertexCtx(
+                    possiblePoints.toPersistentList(),
+                    MutableList(vertexAmount) { null }.toPersistentList(),
+                    (0 until vertexAmount).toPersistentSet()
+                )
+                yield(ctx)
             }
         }
-        val possiblePoints = MutableList(vertexAmount) { i ->
-            val assigment = assignments[i]
-            when {
-                assigment != null -> setOf(assigment)
-                else -> allHolePoints
-            }
-        }
-        return VertexCtx(
-            possiblePoints.toPersistentList(),
-            MutableList(vertexAmount) { null }.toPersistentList(),
-            (0 until vertexAmount).toPersistentSet()
-        )
     }
 
     private fun randomInitialSeed(): VertexCtx {
