@@ -55,6 +55,7 @@ class OtherDummySolver(
     val optimizeFirstIteration: Boolean = true,
     val useRandomOtkats: Boolean = false
 ) {
+    val timeout = Duration.minutes(5)
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
     val overlays = ConcurrentHashMap<Drawable, Color>()
@@ -245,7 +246,6 @@ class OtherDummySolver(
 
     private fun dummyRandom(): Figure {
         val retries = 100
-        val tryDuration = Duration.Companion.minutes(30)
         val timer = Timer()
         return run {
             var result: Figure? = currentBestSolutionFigure()
@@ -262,7 +262,7 @@ class OtherDummySolver(
 
                 val startingIdx = vctx.vertices.randomBest() ?: return problem.figure
                 firstIteration = true
-                val (tryResult, _) = timer.solveWithTimeout(tryDuration) {
+                val (tryResult, _) = timer.solveWithTimeout(timeout) {
                     searchVertex(startingIdx, vctx.withVertex(startingIdx))
                 }
                 tryResult ?: continue
@@ -278,7 +278,6 @@ class OtherDummySolver(
 
     private fun randomTriesMode(): Figure {
         val retries = 10000
-        val tryDuration = Duration.Companion.minutes(1)
         val timer = Timer()
         return run {
             var result: Figure? = currentBestSolutionFigure()
@@ -293,7 +292,7 @@ class OtherDummySolver(
                     .minByOrNull { it.value.size }?.index
                 val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
                 firstIteration = true
-                val (tryResult, _) = timer.solveWithTimeout(tryDuration) {
+                val (tryResult, _) = timer.solveWithTimeout(timeout) {
                     searchVertex(
                         startingIdx,
                         initialCtx.withVertex(startingIdx)
@@ -312,7 +311,6 @@ class OtherDummySolver(
 
     private fun holeFitterMode(): Figure {
         val retries = 10000
-        val tryDuration = Duration.Companion.minutes(5)
         val timer = Timer()
         return run {
             var result: Figure? = currentBestSolutionFigure()
@@ -328,7 +326,7 @@ class OtherDummySolver(
                     .minByOrNull { it.value.size }?.index
                 val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
                 firstIteration = true
-                val (tryResult, _) = timer.solveWithTimeout(tryDuration) {
+                val (tryResult, _) = timer.solveWithTimeout(timeout) {
                     searchVertex(
                         startingIdx,
                         initialCtx.withVertex(startingIdx)
@@ -562,15 +560,20 @@ class OtherDummySolver(
         }.sortedWith(
             compareBy<Map.Entry<Point, *>> { (key, _) ->
                 (key in holeVertices).toInt()
-            }.thenBy { (key, _) ->
-                -(currentTarget?.let {
-                    key.distance(it.to2D())
-                } ?: 0.0)
-            }.thenBy {
-                validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
-            }.thenBy {
-                it in bonusVertices
-            }.reversed()
+            }
+//                .thenBy { (key, _) ->
+//                -(currentTarget?.let {
+//                    key.distance(it.to2D())
+//                } ?: 0.0)
+
+//            }
+//            .thenBy {
+//                validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
+//            }
+//                .thenBy {
+//                it in bonusVertices
+//            }
+                .reversed()
         )
 
         val otkat = if (useRandomOtkats) 1 + java.util.Random().nextInt(10) else 0
