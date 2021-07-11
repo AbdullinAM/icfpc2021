@@ -52,7 +52,8 @@ class OtherDummySolver(
     val showGraphics: Boolean = false,
     val mode: SolverMode = SolverMode.SINGLE,
     val sufflePossibleEntries: Boolean = true,
-    val optimizeFirstIteration: Boolean = true
+    val optimizeFirstIteration: Boolean = true,
+    val useRandomOtkats: Boolean = false
 ) {
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
@@ -317,6 +318,7 @@ class OtherDummySolver(
             var result: Figure? = currentBestSolutionFigure()
             var tryIdx = 0
             val seedSequence = holeFitterInitialSeed().iterator()
+            if (!seedSequence.hasNext()) error("Empty hole fitting paths")
             while (tryIdx++ < retries) {
                 val score = result?.let { dislikes(problem.hole, it.currentPose) }
                 if (score != null && result != null && score == 0L) return result
@@ -372,6 +374,7 @@ class OtherDummySolver(
         val vertexAmount = problem.figure.vertices.size
         val hf = HoleFitter(problem)
         val fit = hf.fit()
+        if (!fit.iterator().hasNext()) return@sequence
         while (true) {
             for (path in fit) {
                 val assignments = MutableList<Point?>(vertexAmount) { null }
@@ -569,6 +572,8 @@ class OtherDummySolver(
                 it in bonusVertices
             }.reversed()
         )
+
+        val otkat = if (useRandomOtkats) 1 + java.util.Random().nextInt(10) else 0
         for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
             if (checkCanceled()) return null to 9999
             var newCtx = ctx
@@ -588,21 +593,20 @@ class OtherDummySolver(
                 val fig = problem.figure.copy(vertices = newCtx.assigment.toList() as List<Point>)
                 if (!checkCorrect(problem.figure, fig, problem.epsilon)) {
                     println("Found incorrect assigment")
-                    return null to 9999
+                    return null to otkat
                 }
                 if (findAllSolutions) {
                     saveResult(problem, fig)
-                    return null to 9999
+                    return null to otkat
                 }
                 return newCtx to 9999
             }
-            val (res, otkat) = searchVertex(nextVertex, newCtx.withVertex(nextVertex))
+            val (res, xotkat) = searchVertex(nextVertex, newCtx.withVertex(nextVertex))
             if (res != null) return res to 9999
-            if (otkat > 0) {
-                return null to otkat - 1
+            if (xotkat > 0) {
+                return null to xotkat - 1
             }
         }
-        val otkat = 1 + java.util.Random().nextInt(10)
         return null to otkat
     }
 
