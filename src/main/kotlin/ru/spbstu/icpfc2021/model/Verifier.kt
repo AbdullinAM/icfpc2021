@@ -1,10 +1,9 @@
 package ru.spbstu.icpfc2021.model
 
+import ru.spbstu.icpfc2021.gui.center
 import java.awt.Polygon
-import java.awt.geom.Area
-import java.awt.geom.Line2D
-import java.awt.geom.PathIterator
-import java.awt.geom.Point2D
+import java.awt.Rectangle
+import java.awt.geom.*
 
 val GOLDEN_RATIO = 0.25
 
@@ -125,6 +124,23 @@ fun List<Point>.toPoly(): Polygon {
     }
 
     return poly
+}
+
+fun List<Point>.bounds(): Rectangle2D {
+    if (isEmpty()) return Rectangle(0, 0, 0, 0)
+    val iterator = iterator()
+    val first = iterator.next()
+    val res = Rectangle2D.Double(first.getX(), first.getY(), 0.0, 0.0)
+    for (element in iterator) {
+        res.add(element)
+    }
+    return res
+}
+
+fun List<Point>.expansiveness(): Long {
+    if (isEmpty()) return 0
+    val center = bounds().center
+    return sumOf { Point2D.distance(it.getX(), it.getY(), center.x, center.y).toLong() }
 }
 
 fun Polygon.sides(): Sequence<Line2D.Double> = sequence {
