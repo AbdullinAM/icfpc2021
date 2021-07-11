@@ -312,7 +312,7 @@ class OtherDummySolver(
 
     private fun holeFitterMode(): Figure {
         val retries = 10000
-        val tryDuration = Duration.Companion.minutes(1)
+        val tryDuration = Duration.Companion.minutes(5)
         val timer = Timer()
         return run {
             var result: Figure? = currentBestSolutionFigure()
