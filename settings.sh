@@ -28,25 +28,29 @@ function try_post_problem_by_file () {
 	echo "Getting current stats for problem $problem_id"
 	get_problem_current_id $problem_id
 
-	json=`curl -sL \
-	-X GET \
-	-H "Content-Type: application/json" \
-	-H "Authorization: Bearer $API_TOKEN" \
-	--data @"./$file" \
-	--url "https://poses.live/api/problems/$problem_id/solutions/$last_seen_uuid"`
+  if [ "x$last_seen_uuid" != "x" ]; then
+		json=`curl -sL \
+			-X GET \
+			-H "Content-Type: application/json" \
+			-H "Authorization: Bearer $API_TOKEN" \
+			--data @"./$file" \
+			--url "https://poses.live/api/problems/$problem_id/solutions/$last_seen_uuid"`
 
-	current_dislikes=`echo $json | jq ".dislikes"`
+		current_dislikes=`echo $json | jq ".dislikes"`
+	else
+		current_dislikes=999999999
+	fi
 
 	solution_dislikes=`./gradlew -q -PmainClass="ru.spbstu.icpfc2021.SolutionsGraderKt" run --args $problem_id`
 
 	if [ $current_dislikes -gt $solution_dislikes ]; then
-	echo "We are better for $problem_id: $solution_dislikes < $current_dislikes";
-	echo "Posting solution for problem $problem_id"
-	curl -sL \
-	  -X POST \
-	  -H "Content-Type: application/json" \
-	  -H "Authorization: Bearer $API_TOKEN" \
-	  --data @"./$file" \
-	  --url "https://poses.live/api/problems/$problem_id/solutions"
+		echo "We are better for $problem_id: $solution_dislikes < $current_dislikes";
+		echo "Posting solution for problem $problem_id"
+		curl -sL \
+		  -X POST \
+		  -H "Content-Type: application/json" \
+		  -H "Authorization: Bearer $API_TOKEN" \
+		  --data @"./$file" \
+		  --url "https://poses.live/api/problems/$problem_id/solutions"
 	fi
 }
