@@ -68,6 +68,8 @@ fun Line2D(p1: Point2D, p2: Point2D): Line2D = Line2D.Double(p1, p2)
 operator fun Line2D.component1() = p1
 operator fun Line2D.component2() = p2
 
+fun Color.transparent() = Color(this.red, this.green, this.blue, this.alpha - 25)
+
 fun dumbCanvas(width: Int = 800, height: Int = 600, draw: Graphics2D.() -> Unit) = object : TransformablePanel() {
     override val transform: AffineTransform = AffineTransform()
 
@@ -506,7 +508,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
         val ourEdges = problem.figure.edges.filter { it.startIndex == ourIndex || it.endIndex == ourIndex }
 
         val candidates = holeEdges.filter { he ->
-            ourEdges.any { e -> checkCorrect(figure.calculateEdge(e), he, problem.epsilon) }
+            ourEdges.any { e -> checkCorrect(he, problem.figure.calculateEdge(e), problem.epsilon) }
         }
 
         var hedges by overlays
@@ -514,7 +516,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
         hedges = Drawable {
             with(it) {
                 for (candidate in candidates) {
-                    withPaint(Color.GREEN.darker()) {
+                    withPaint(Color.GREEN.darker().transparent().transparent().transparent()) {
                         //drawLine(candidate.start, candidate.end)
                         val line = Line2D.Double(candidate.start, candidate.end)
                         it.draw(Drawable.Shape(BasicStroke(0.8f).createStrokedShape(line)))
