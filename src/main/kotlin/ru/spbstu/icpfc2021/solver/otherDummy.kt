@@ -227,8 +227,8 @@ class OtherDummySolver(
 
     @OptIn(ExperimentalTime::class)
     private fun dummyRandom(): Figure {
-        val retries = 1000
-        val tryDuration = Duration.Companion.minutes(30)
+        val retries = 100
+        val tryDuration = Duration.Companion.minutes(5)
         val timer = Timer()
         return run {
             val resultFile = File("solutions/${problem.number}.sol").also {
