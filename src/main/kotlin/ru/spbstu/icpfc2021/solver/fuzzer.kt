@@ -39,7 +39,8 @@ class fuzzer(
     var currentFigure: Figure = problem.figure,
     val constrainSearchSpace: Boolean = true,
     val strictlyLowerDislikes: Boolean = false,
-    val maxVariantsPerSet: Int = 1000000
+    val maxVariantsPerSet: Int = 1000000,
+    val invalidityMode: Boolean = false
 ) {
 
     val verifier = Verifier(problem)
@@ -143,7 +144,8 @@ class fuzzer(
                 val neighbor = currentFigure.vertices[it.oppositeVertex(pi)]
                 val candidates = abstractSquares[el]!!.mapTo(mutableSetOf()) { neighbor + it }
                 candidates.retainAll { it in holePoints }
-                candidates.retainAll { verifier.check(Edge(it, neighbor)) == Verifier.Status.OK }
+                if (!invalidityMode)
+                    candidates.retainAll { verifier.check(Edge(it, neighbor)) == Verifier.Status.OK }
                 candidates.removeAll { it == currentPos }
                 candidates
             }.intersectAll()
@@ -172,7 +174,7 @@ class fuzzer(
     }
 
     fun fuzz() {
-        val numPoints = (Random.nextInt(minOf(3, currentFigure.vertices.size)) + 1)
+        val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
         val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random()).shuffled()
         println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(randomPoints).map { newPoint ->
@@ -184,17 +186,23 @@ class fuzzer(
                 copy(vertices = acc)
             }
         }
-        val baseline = dislikes(problem.hole, currentFigure.currentPose)
-        val bestSol = candidates.map { it to dislikes(problem.hole, it.currentPose) }.minByOrNull { it.second }
+        val baseline = dislikes(problem.hole, currentFigure.currentPose) + verifier.countInvalidEdges(currentFigure)
+        val bestSol = candidates.map {
+            it to (dislikes(problem.hole, it.currentPose) + verifier.countInvalidEdges(it))
+        }.minByOrNull { it.second }
         when {
             bestSol == null -> println("No solutions found =(")
             bestSol.second > baseline -> {
                 println("Cannot improve current solution")
                 if(!strictlyLowerDislikes && bestSol.second.toDouble() - baseline < baseline/20.0) {
                     currentFigure = bestSol.first
+                    println(currentFigure.toJsonString())
                 }
             }
-            else -> currentFigure = bestSol.first
+            else -> {
+                currentFigure = bestSol.first
+                println(currentFigure.toJsonString())
+            }
         }
     }
 
@@ -211,7 +219,7 @@ fun main(args: Array<String>) {
     println("$index.sol")
 
     val startFigure = problem.figure.copy(vertices = solution.vertices)
-    val fuzzer = fuzzer(problem, startFigure, strictlyLowerDislikes = true)
+    val fuzzer = fuzzer(problem, startFigure, strictlyLowerDislikes = true, invalidityMode = true)
     val gui = drawFigure(problem, startFigure)
     while(true) {
         //System.`in`.bufferedReader().readLine()
