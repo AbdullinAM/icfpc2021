@@ -14,6 +14,7 @@ import java.awt.geom.GeneralPath
 import java.io.File
 import java.math.BigInteger
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JFrame
 import javax.swing.KeyStroke
@@ -50,7 +51,7 @@ class OtherDummySolver(
 ) {
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
-    val overlays = mutableListOf<Pair<Drawable, Color>>()
+    val overlays = ConcurrentHashMap<Drawable, Color>()
     val validEdges = hashSetOf<Edge>()
     lateinit var abstractSquares: Map<BigInteger, Set<Point>>
 
