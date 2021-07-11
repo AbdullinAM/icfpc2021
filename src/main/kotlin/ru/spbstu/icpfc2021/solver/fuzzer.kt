@@ -210,7 +210,7 @@ fun main(args: Array<String>) {
     println("$index.sol")
 
     val startFigure = problem.figure.copy(vertices = solution.vertices)
-    val fuzzer = fuzzer(problem, startFigure, strictlyLowerDislikes = true)
+    val fuzzer = fuzzer(problem, startFigure, strictlyLowerDislikes = false)
     val gui = drawFigure(problem, startFigure)
     while(true) {
         //System.`in`.bufferedReader().readLine()

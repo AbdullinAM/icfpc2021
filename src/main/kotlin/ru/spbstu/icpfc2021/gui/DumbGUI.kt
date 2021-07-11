@@ -533,7 +533,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
         canvas.invokeRepaint()
 
     }
-    dumbFrame(canvas).defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+    dumbFrame(canvas, "TASK# ${problem.number}").defaultCloseOperation = JFrame.EXIT_ON_CLOSE
     return GUIController(figureStack, canvas)
 }
 
