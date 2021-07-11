@@ -23,6 +23,12 @@ dependencies {
 
     implementation("com.github.breandan:kaliningraph:0.1.7")
 
+    implementation("org.jmonkeyengine:jme3-core:3.4.0-stable")
+    implementation("org.jmonkeyengine:jme3-jbullet:3.4.0-stable")
+    implementation("org.jmonkeyengine:jme3-testdata:3.4.0-stable")
+    runtimeOnly("org.jmonkeyengine:jme3-desktop:3.4.0-stable")
+    runtimeOnly("org.jmonkeyengine:jme3-lwjgl:3.4.0-stable")
+
     testImplementation(kotlin("test"))
 }
 
