@@ -353,7 +353,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
 
         for ((edge, oldEdge) in graphEdges.zip(startingFigure.calculatedEdges)) {
             val color = when {
-                checkCorrect(oldEdge, edge, problem.epsilon) -> Color.BLUE
+                checkCorrect(oldEdge, edge, problem.epsilon) && verifier.check(edge) == Verifier.Status.OK -> Color.BLUE
                 else -> Color.RED
             }
             withPaint(color) {

@@ -429,7 +429,7 @@ class OtherDummySolver(
                     if (checkCanceled()) return null
                     when {
                         edge in validEdges -> edge
-                        !verifier.check(edge) -> edge.also { validEdges += it }
+                        verifier.check(edge) == Verifier.Status.OK -> edge.also { validEdges += it }
                         else -> null
                     }
                 }
