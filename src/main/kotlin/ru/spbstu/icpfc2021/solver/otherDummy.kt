@@ -139,6 +139,9 @@ class OtherDummySolver(
         canvas.onKey(KeyStroke.getKeyStroke('-', 0)) {
             canvas.scale(0.9)
         }
+        canvas.onKey("control C") {
+            solverIsRunning.set(false)
+        }
         canvas.onMouseWheel { e ->
             val rot = e.preciseWheelRotation
             val point = e.canvasPoint

@@ -370,10 +370,15 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
         }
 
         for (b in problem.bonuses.orEmpty()) {
-            val color = when(b.bonus) {
+            val acquired = figure.vertices.any { it == b.position }
+            var color = when(b.bonus) {
                 BonusType.GLOBALIST -> Color.YELLOW
                 BonusType.BREAK_A_LEG -> Color.MAGENTA
                 BonusType.WALLHACK -> Color.ORANGE
+            }
+            color = when {
+                acquired -> color.darker()
+                else -> color.brighter()
             }
             withPaint(color) {
                 fill(Ellipse2D(b.position, 2.0))
