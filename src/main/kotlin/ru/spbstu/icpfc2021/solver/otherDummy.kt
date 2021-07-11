@@ -228,7 +228,7 @@ class OtherDummySolver(
             var result: Figure? = previousSolution?.let { problem.figure.copy(vertices = it.vertices) }
             var tryIdx = 0
             while (tryIdx++ < retries) {
-                val score = result?.let { dislikes(problem.hole, it.currentPose)}
+                val score = result?.let { dislikes(problem.hole, it.currentPose) }
                 if (score != null && result != null && score == 0L) return result
                 println("Start try $tryIdx | ${score}}")
                 solverIsRunning.set(true)
@@ -270,13 +270,26 @@ class OtherDummySolver(
         }
         val possiblePoints = MutableList(vertexAmount) { i ->
             val assigment = assignments[i]
-            if (assigment == null) allHolePoints else setOf(assigment)
+            when {
+                assigment != null -> setOf(assigment)
+                else -> randomlyReducePointSet(allHolePoints, Random.nextDouble(0.1, 1.0))
+            }
         }
         return VertexCtx(
             possiblePoints.toPersistentList(),
             assignments.toPersistentList(),
             (0 until vertexAmount).toPersistentSet()
         )
+    }
+
+    private fun randomlyReducePointSet(original: Set<Point>, percent: Double): Set<Point> {
+        val pointSource = original.toList()
+        val points = hashSetOf<Point>()
+        val originalSize = original.size.toDouble()
+        while (points.size / originalSize < percent) {
+            points += pointSource.random()
+        }
+        return points
     }
 
     private fun singleTryMode(): Figure {
