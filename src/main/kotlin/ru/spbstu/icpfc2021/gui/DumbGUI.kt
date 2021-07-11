@@ -445,7 +445,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
             canvas.invokeRepaint()
         }
     }
-    canvas.onKey("control R") {
+    canvas.onKey("control alt R") {
         while (figureStack.size > 1) {
             figureStack.pop()
         }
@@ -496,7 +496,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
     canvas.onKey(KeyStroke.getKeyStroke('-', 0)) {
         canvas.scale(0.9)
     }
-    canvas.onKey("control P") {
+    canvas.onKey("control E") {
         val mouse = canvas.canvasMousePosition ?: return@onKey
         val startPoint = figure.vertices.withIndex().minByOrNull { (_, v) -> v.distance(mouse) }?.value ?: return@onKey
 
@@ -514,8 +514,10 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
         hedges = Drawable {
             with(it) {
                 for (candidate in candidates) {
-                    withPaint(Color.GREEN) {
-                        drawLine(candidate.start, candidate.end)
+                    withPaint(Color.GREEN.darker()) {
+                        //drawLine(candidate.start, candidate.end)
+                        val line = Line2D.Double(candidate.start, candidate.end)
+                        it.draw(Drawable.Shape(BasicStroke(0.8f).createStrokedShape(line)))
                     }
                 }
             }
