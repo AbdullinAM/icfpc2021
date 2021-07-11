@@ -7,12 +7,14 @@ import ru.spbstu.icpfc2021.gui.drawFigure
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.MapToSet
+import ru.spbstu.wheels.ints
 import java.io.File
 import java.math.BigInteger
 import javax.xml.crypto.Data
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.random.Random
 
 fun <T> List<Set<T>>.cartesian(): MutableList<PersistentList<T>> =
     fold(mutableListOf(persistentListOf())) { acc, set ->
@@ -105,6 +107,20 @@ class fuzzer(
         }.intersectAll()
     }
 
+    fun pickNeighbours(no: Int, seed: Int, res: MutableSet<Int> = mutableSetOf()): Set<Int> {
+        val edges = nodesToEdges[seed]
+        res += edges.shuffled().map { it.oppositeVertex(seed) }.take(no - res.size)
+        if (res.size < no) pickNeighbours(no, res.random(), res)
+        //while (res.size < no) {
+            //
+        //}
+        return res
+    }
+
+    fun randomPoints(no: Int, seed: Int): List<Int> {
+        return listOf(seed) + pickNeighbours(no - 1, seed)
+    }
+
     fun multipointCandidates(pis: List<Int>): List<List<Point>> {
         val pisToSet = pis.toSet()
 
@@ -135,7 +151,9 @@ class fuzzer(
         val cart = personalSets.cartesian()
         cart.retainAll { solution ->
             innerEdges.all { edge ->
-                val calculated = Edge(solution[edge.startIndex], solution[edge.endIndex])
+                val ourStartIndex = pis.indexOf(edge.startIndex)
+                val ourEndIndex = pis.indexOf(edge.endIndex)
+                val calculated = Edge(solution[ourStartIndex], solution[ourEndIndex])
                 !verifier.check(calculated)
                         && calculated.squaredLength.big.millions in problem.distanceToMillionsRange(edge.calculateOriginal().squaredLength.big)
             }
@@ -145,10 +163,17 @@ class fuzzer(
     }
 
     fun fuzz() {
-        val randomPoint = currentFigure.vertices.indices.random()
-        println("Fuzzer: picked point $randomPoint")
-        val candidates = onePointCandidates(randomPoint).map { newPoint ->
-            currentFigure.run { copy(vertices = vertices.toPersistentList().set(randomPoint, newPoint)) }
+        val numPoints = Random.nextInt(5) + 1
+        val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random())
+        println("Fuzzer: picked points $randomPoints")
+        val candidates = multipointCandidates(randomPoints).map { newPoint ->
+            currentFigure.run {
+                val acc = vertices.toMutableList()
+                for ((ix, i) in randomPoints.withIndex()) {
+                    acc[i] = newPoint[ix]
+                }
+                copy(vertices = acc)
+            }
         }
         val baseline = dislikes(problem.hole, currentFigure.currentPose)
         val bestSol = candidates.map { it to dislikes(problem.hole, it.currentPose) }.minByOrNull { it.second }
@@ -175,7 +200,7 @@ fun main(args: Array<String>) {
     val fuzzer = fuzzer(problem, startFigure)
     val gui = drawFigure(problem, startFigure)
     while(true) {
-        System.`in`.bufferedReader().readLine()
+        //System.`in`.bufferedReader().readLine()
         fuzzer.fuzz()
         gui.setFigure(fuzzer.currentFigure)
         gui.invokeRepaint()
