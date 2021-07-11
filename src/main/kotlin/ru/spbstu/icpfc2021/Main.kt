@@ -18,7 +18,8 @@ fun main(args: Array<String>) {
         problem,
         findAllSolutions = false,
         showGraphics = false,
-        mode = SolverMode.DUMMY_RANDOM
+        mode = SolverMode.HOLE_FITTER,
+        optimizeFirstIteration = false,
     )
     val figure = solver.solve()
 

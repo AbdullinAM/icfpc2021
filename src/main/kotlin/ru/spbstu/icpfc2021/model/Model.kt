@@ -52,9 +52,7 @@ private val million = BigInteger.valueOf(1_000_000)
 val Long.big get() = BigInteger.valueOf(this)
 val Int.big get() = BigInteger.valueOf(this.toLong())
 
-fun checkCorrect(from: Edge, to: Edge, epsilon: Int): Boolean {
-    val f = from.squaredLength
-    val t = to.squaredLength
+fun areWithinEpsilon(f: Long, t: Long, epsilon: Int): Boolean {
     return when {
         t == 0L -> false
         f == t -> true
@@ -65,6 +63,12 @@ fun checkCorrect(from: Edge, to: Edge, epsilon: Int): Boolean {
             million * t.big - million * f.big <= epsilon.big * f.big
         }
     }
+}
+
+fun checkCorrect(from: Edge, to: Edge, epsilon: Int): Boolean {
+    val f = from.squaredLength
+    val t = to.squaredLength
+    return areWithinEpsilon(f, t, epsilon)
 }
 
 fun checkCorrect(from: Figure, to: Figure, epsilon: Int) =

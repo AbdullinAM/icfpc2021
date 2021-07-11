@@ -41,9 +41,10 @@ fun Boolean.toInt() = when {
 }
 
 enum class SolverMode {
-    SINGLE, RANDOM, DUMMY_RANDOM
+    SINGLE, RANDOM, DUMMY_RANDOM, HOLE_FITTER
 }
 
+@OptIn(ExperimentalTime::class)
 class OtherDummySolver(
     val allHolePoints: Set<Point>,
     val problem: Problem,
@@ -51,7 +52,8 @@ class OtherDummySolver(
     val showGraphics: Boolean = false,
     val mode: SolverMode = SolverMode.SINGLE,
     val sufflePossibleEntries: Boolean = true,
-    val optimizeFirstIteration: Boolean = true
+    val optimizeFirstIteration: Boolean = true,
+    val useRandomOtkats: Boolean = false
 ) {
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
@@ -237,38 +239,21 @@ class OtherDummySolver(
             SolverMode.SINGLE -> singleTryMode()
             SolverMode.RANDOM -> randomTriesMode()
             SolverMode.DUMMY_RANDOM -> dummyRandom()
+            SolverMode.HOLE_FITTER -> holeFitterMode()
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     private fun dummyRandom(): Figure {
         val retries = 100
-        val tryDuration = Duration.Companion.minutes(5)
+        val tryDuration = Duration.Companion.minutes(30)
         val timer = Timer()
         return run {
-            val resultFile = File("solutions/${problem.number}.sol").also {
-                it.parentFile?.mkdirs()
-            }
-            val previousSolution = try {
-                readValue<Pose>(resultFile)
-            } catch (e: Throwable) {
-                println("Could not read previous solution: ${e.message}")
-                null
-            }
-            var result: Figure? = previousSolution?.let { problem.figure.copy(vertices = it.vertices) }
+            var result: Figure? = currentBestSolutionFigure()
             var tryIdx = 0
             while (tryIdx++ < retries) {
                 val score = result?.let { dislikes(problem.hole, it.currentPose) }
                 if (score != null && result != null && score == 0L) return result
                 println("Start try $tryIdx | ${score}}")
-                solverIsRunning.set(true)
-                val cancelation = object : TimerTask() {
-                    override fun run() {
-                        solverIsRunning.set(false)
-                    }
-                }
-                timer.schedule(cancelation, tryDuration.inWholeMilliseconds)
-
                 val vctx = VertexCtx(
                     MutableList(problem.figure.vertices.size) { allHolePoints }.toPersistentList(),
                     MutableList(problem.figure.vertices.size) { null }.toPersistentList(),
@@ -277,8 +262,9 @@ class OtherDummySolver(
 
                 val startingIdx = vctx.vertices.randomBest() ?: return problem.figure
                 firstIteration = true
-                val tryResult = searchVertex(startingIdx, vctx.withVertex(startingIdx))
-                cancelation.cancel()
+                val (tryResult, _) = timer.solveWithTimeout(tryDuration) {
+                    searchVertex(startingIdx, vctx.withVertex(startingIdx))
+                }
                 tryResult ?: continue
                 val tryFig = problem.figure.copy(vertices = tryResult.assigment.filterNotNull())
                 if (saveResult(problem, tryFig) || result == null) {
@@ -289,43 +275,30 @@ class OtherDummySolver(
         } ?: error("No solution found")
     }
 
-    @OptIn(ExperimentalTime::class)
+
     private fun randomTriesMode(): Figure {
         val retries = 10000
-        val tryDuration = Duration.Companion.minutes(5)
+        val tryDuration = Duration.Companion.minutes(1)
         val timer = Timer()
         return run {
-            val resultFile = File("solutions/${problem.number}.sol").also {
-                it.parentFile?.mkdirs()
-            }
-            val previousSolution = try {
-                readValue<Pose>(resultFile)
-            } catch (e: Throwable) {
-                println("Could not read previous solution: ${e.message}")
-                null
-            }
-            var result: Figure? = previousSolution?.let { problem.figure.copy(vertices = it.vertices) }
+            var result: Figure? = currentBestSolutionFigure()
             var tryIdx = 0
             while (tryIdx++ < retries) {
                 val score = result?.let { dislikes(problem.hole, it.currentPose) }
                 if (score != null && result != null && score == 0L) return result
                 println("Start try $tryIdx | ${score}}")
-                solverIsRunning.set(true)
-                val cancelation = object : TimerTask() {
-                    override fun run() {
-                        solverIsRunning.set(false)
-                    }
-                }
-                timer.schedule(cancelation, tryDuration.inWholeMilliseconds)
+
                 val initialCtx = randomInitialSeed()
-                val randomInitialVertex = initialCtx.assigment.withIndex()
-                    .filter { it: IndexedValue<Point?> -> it.value != null }
-                    .map { it.index }
-                    .randomOrNull()
+                val randomInitialVertex = initialCtx.possiblePoints.withIndex()
+                    .minByOrNull { it.value.size }?.index
                 val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
                 firstIteration = true
-                val tryResult = searchVertex(startingIdx, initialCtx.withVertex(startingIdx))
-                cancelation.cancel()
+                val (tryResult, _) = timer.solveWithTimeout(tryDuration) {
+                    searchVertex(
+                        startingIdx,
+                        initialCtx.withVertex(startingIdx)
+                    )
+                }
                 tryResult ?: continue
                 val tryFig = problem.figure.copy(vertices = tryResult.assigment.filterNotNull())
                 if (saveResult(problem, tryFig) || result == null) {
@@ -334,6 +307,96 @@ class OtherDummySolver(
             }
             result
         } ?: error("No solution found")
+    }
+
+
+    private fun holeFitterMode(): Figure {
+        val retries = 10000
+        val tryDuration = Duration.Companion.minutes(5)
+        val timer = Timer()
+        return run {
+            var result: Figure? = currentBestSolutionFigure()
+            var tryIdx = 0
+            val seedSequence = holeFitterInitialSeed().iterator()
+            if (!seedSequence.hasNext()) error("Empty hole fitting paths")
+            while (tryIdx++ < retries) {
+                val score = result?.let { dislikes(problem.hole, it.currentPose) }
+                if (score != null && result != null && score == 0L) return result
+                println("Start try $tryIdx | ${score}}")
+                val initialCtx = seedSequence.next()
+                val randomInitialVertex = initialCtx.possiblePoints.withIndex()
+                    .minByOrNull { it.value.size }?.index
+                val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
+                firstIteration = true
+                val (tryResult, _) = timer.solveWithTimeout(tryDuration) {
+                    searchVertex(
+                        startingIdx,
+                        initialCtx.withVertex(startingIdx)
+                    )
+                }
+                tryResult ?: continue
+                val tryFig = problem.figure.copy(vertices = tryResult.assigment.filterNotNull())
+                if (saveResult(problem, tryFig) || result == null) {
+                    result = tryFig
+                }
+            }
+            result
+        } ?: error("No solution found")
+    }
+
+    private inline fun <reified T> Timer.solveWithTimeout(duration: Duration, computation: () -> T): T {
+        solverIsRunning.set(true)
+        val cancelation = object : TimerTask() {
+            override fun run() {
+                solverIsRunning.set(false)
+            }
+        }
+        schedule(cancelation, duration.inWholeMilliseconds)
+        val result = computation()
+        cancelation.cancel()
+        return result
+    }
+
+    private fun currentBestSolutionFigure(): Figure? {
+        val resultFile = File("solutions/${problem.number}.sol").also {
+            it.parentFile?.mkdirs()
+        }
+        val previousSolution = try {
+            readValue<Pose>(resultFile)
+        } catch (e: Throwable) {
+            println("Could not read previous solution: ${e.message}")
+            null
+        }
+        return previousSolution?.let { problem.figure.copy(vertices = it.vertices) }
+    }
+
+    private fun holeFitterInitialSeed() = sequence {
+        val vertexAmount = problem.figure.vertices.size
+        val hf = HoleFitter(problem)
+        val fit = hf.fit()
+        if (!fit.iterator().hasNext()) return@sequence
+        while (true) {
+            for (path in fit) {
+                val assignments = MutableList<Point?>(vertexAmount) { null }
+                for ((de, e) in path) {
+                    assignments[de.startIndex] = e.start
+                    assignments[de.endIndex] = e.end
+                }
+                val possiblePoints = MutableList(vertexAmount) { i ->
+                    val assigment = assignments[i]
+                    when {
+                        assigment != null -> setOf(assigment)
+                        else -> allHolePoints
+                    }
+                }
+                val ctx = VertexCtx(
+                    possiblePoints.toPersistentList(),
+                    MutableList(vertexAmount) { null }.toPersistentList(),
+                    (0 until vertexAmount).toPersistentSet()
+                )
+                yield(ctx)
+            }
+        }
     }
 
     private fun randomInitialSeed(): VertexCtx {
@@ -341,6 +404,7 @@ class OtherDummySolver(
         val holeVertices = problem.hole.toMutableSet()
         val assignments = MutableList<Point?>(vertexAmount) { null }
         val bound = minOf(vertexAmount, holeVertices.size, 5)
+
         for (i in 0..Random.nextInt(1, bound)) {
             val emptyVertices =
                 assignments.withIndex().filter { it: IndexedValue<Point?> -> it.value == null }.map { it.index }
@@ -349,6 +413,7 @@ class OtherDummySolver(
             holeVertices -= point
             assignments[vertex] = point
         }
+
         val possiblePoints = MutableList(vertexAmount) { i ->
             val assigment = assignments[i]
             when {
@@ -358,7 +423,7 @@ class OtherDummySolver(
         }
         return VertexCtx(
             possiblePoints.toPersistentList(),
-            assignments.toPersistentList(),
+            MutableList(vertexAmount) { null }.toPersistentList(),
             (0 until vertexAmount).toPersistentSet()
         )
     }
@@ -404,7 +469,8 @@ class OtherDummySolver(
 
         val startingIdx = vctx.vertices.best() ?: return problem.figure
 
-        val result = searchVertex(startingIdx, vctx.withVertex(startingIdx)) ?: error("No solution found")
+        val (result, _) = searchVertex(startingIdx, vctx.withVertex(startingIdx)) ?: error("No solution found")
+        result ?: error("No solution found")
         return problem.figure.copy(vertices = result.assigment.toList() as List<Point>)
     }
 
@@ -435,8 +501,8 @@ class OtherDummySolver(
 
     private fun checkCanceled(): Boolean = !solverIsRunning.get()
 
-    fun searchVertex(vid: Int, ctx: VertexCtx): VertexCtx? {
-        if (checkCanceled()) return null
+    fun searchVertex(vid: Int, ctx: VertexCtx): Pair<VertexCtx?, Int> {
+        if (checkCanceled()) return null to 9999
         val allAbstractEdges = verticesToEdges[vid]
         val allConcreteGroups = mutableMapOf<Point, MutableMap<DataEdge, Set<Edge>>>()
         var currentVertexPossiblePoints = ctx.possiblePoints[vid]
@@ -459,7 +525,7 @@ class OtherDummySolver(
             canvas.invokeRepaint()
         }
         for (abstractEdge in allAbstractEdges) {
-            if (checkCanceled()) return null
+            if (checkCanceled()) return null to 9999
             val otherVertexPossiblePoints = ctx.possiblePoints[abstractEdge.oppositeVertex(vid)]
             val possibleDistances = (abstractSquares[abstractEdge.calculate().squaredLength.big] ?: emptySet())
             val groupedConcreteEdges = currentVertexPossiblePoints.associateWith { startPoint ->
@@ -470,7 +536,7 @@ class OtherDummySolver(
                         abstractEdge.isReversed(vid) -> Edge(endPoint, startPoint)
                         else -> Edge(startPoint, endPoint)
                     }
-                    if (checkCanceled()) return null
+                    if (checkCanceled()) return null to 9999
                     when {
                         edge in validEdges -> edge
                         verifier.check(edge) == Verifier.Status.OK -> edge.also { validEdges += it }
@@ -478,12 +544,13 @@ class OtherDummySolver(
                     }
                 }
             }.filterValues { it.isNotEmpty() }
+
             for ((keyPoint, edges) in groupedConcreteEdges) {
                 val vertexEdges = allConcreteGroups.getOrPut(keyPoint) { mutableMapOf() }
                 vertexEdges[abstractEdge] = edges.toSet()
             }
         }
-        if (checkCanceled()) return null
+        if (checkCanceled()) return null to 9999
         val possibleConcreteGroups = allConcreteGroups.filterValues { edges -> edges.keys == allAbstractEdges }
         val validAssignments = ctx.assigment.filterNotNull()
         val holeVertices = problem.hole.toSet() - validAssignments
@@ -493,8 +560,8 @@ class OtherDummySolver(
             sufflePossibleEntries -> possibleConcreteGroups.entries.shuffled()
             else -> possibleConcreteGroups.entries
         }.sortedWith(
-            compareBy<Map.Entry<Point, *>> {
-                (it.key in holeVertices).toInt()
+            compareBy<Map.Entry<Point, *>> { (key, _) ->
+                (key in holeVertices).toInt()
             }.thenBy { (key, _) ->
                 -(currentTarget?.let {
                     key.distance(it.to2D())
@@ -505,8 +572,10 @@ class OtherDummySolver(
                 it in bonusVertices
             }.reversed()
         )
+
+        val otkat = if (useRandomOtkats) 1 + java.util.Random().nextInt(10) else 0
         for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
-            if (checkCanceled()) return null
+            if (checkCanceled()) return null to 9999
             var newCtx = ctx
             for ((abstractEdge, concreteEdges) in edges) {
                 val vertex = abstractEdge.oppositeVertex(vid)
@@ -524,18 +593,21 @@ class OtherDummySolver(
                 val fig = problem.figure.copy(vertices = newCtx.assigment.toList() as List<Point>)
                 if (!checkCorrect(problem.figure, fig, problem.epsilon)) {
                     println("Found incorrect assigment")
-                    return null
+                    return null to otkat
                 }
                 if (findAllSolutions) {
                     saveResult(problem, fig)
-                    return null
+                    return null to otkat
                 }
-                return newCtx
+                return newCtx to 9999
             }
-            val res = searchVertex(nextVertex, newCtx.withVertex(nextVertex))
-            if (res != null) return res
+            val (res, xotkat) = searchVertex(nextVertex, newCtx.withVertex(nextVertex))
+            if (res != null) return res to 9999
+            if (xotkat > 0) {
+                return null to xotkat - 1
+            }
         }
-        return null
+        return null to otkat
     }
 
 }
