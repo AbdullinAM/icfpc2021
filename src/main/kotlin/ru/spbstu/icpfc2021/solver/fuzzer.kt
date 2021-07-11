@@ -38,7 +38,8 @@ class fuzzer(
     val problem: Problem,
     var currentFigure: Figure = problem.figure,
     val constrainSearchSpace: Boolean = true,
-    val strictlyLowerDislikes: Boolean = false
+    val strictlyLowerDislikes: Boolean = false,
+    val maxVariantsPerSet: Int = 1000000
 ) {
 
     val verifier = Verifier(problem)
@@ -153,7 +154,7 @@ class fuzzer(
         if (constrainSearchSpace) {
             for (i in personalSets.indices) {
                 personalSets[i] = personalSets[i].shuffled().take(
-                    pow(4000000.0, 1.0 / pis.size).roundToInt()
+                    pow(maxVariantsPerSet.toDouble(), 1.0 / pis.size).roundToInt()
                 ).toSet()
             }
         }
@@ -171,7 +172,7 @@ class fuzzer(
     }
 
     fun fuzz() {
-        val numPoints = (Random.nextInt(minOf(20, currentFigure.vertices.size)) + 1)
+        val numPoints = (Random.nextInt(minOf(3, currentFigure.vertices.size)) + 1)
         val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random()).shuffled()
         println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(randomPoints).map { newPoint ->
@@ -210,7 +211,7 @@ fun main(args: Array<String>) {
     println("$index.sol")
 
     val startFigure = problem.figure.copy(vertices = solution.vertices)
-    val fuzzer = fuzzer(problem, startFigure, strictlyLowerDislikes = false)
+    val fuzzer = fuzzer(problem, startFigure, strictlyLowerDislikes = true)
     val gui = drawFigure(problem, startFigure)
     while(true) {
         //System.`in`.bufferedReader().readLine()
