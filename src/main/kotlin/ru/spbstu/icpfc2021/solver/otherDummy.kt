@@ -48,7 +48,8 @@ class OtherDummySolver(
     val showGraphics: Boolean = false,
     val mode: SolverMode = SolverMode.SINGLE,
     val sufflePossibleEntries: Boolean = true,
-    val optimizeFirstIteration: Boolean = true
+    val optimizeFirstIteration: Boolean = true,
+    val useHoleFitter: Boolean = false
 ) {
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
@@ -308,10 +309,8 @@ class OtherDummySolver(
                 }
                 timer.schedule(cancelation, tryDuration.inWholeMilliseconds)
                 val initialCtx = randomInitialSeed()
-                val randomInitialVertex = initialCtx.assigment.withIndex()
-                    .filter { it.value != null }
-                    .map { it.index }
-                    .randomOrNull()
+                val randomInitialVertex = initialCtx.possiblePoints.withIndex()
+                    .minByOrNull { it.value.size }?.index
                 val startingIdx = randomInitialVertex ?: initialCtx.vertices.best() ?: error("No initial index")
                 firstIteration = true
                 val tryResult = searchVertex(startingIdx, initialCtx.withVertex(startingIdx))
@@ -331,13 +330,29 @@ class OtherDummySolver(
         val holeVertices = problem.hole.toMutableSet()
         val assignments = MutableList<Point?>(vertexAmount) { null }
         val bound = minOf(vertexAmount, holeVertices.size, 5)
-        for (i in 0..Random.nextInt(1, bound)) {
-            val emptyVertices = assignments.withIndex().filter { it.value == null }.map { it.index }
-            val vertex = emptyVertices.random()
-            val point = holeVertices.random()
-            holeVertices -= point
-            assignments[vertex] = point
+
+        if (useHoleFitter) {
+            val hf = HoleFitter(problem)
+
+            val fit = hf.fit()
+
+            for (path in fit) {
+                for ((de, e) in path) {
+                    assignments[de.startIndex] = e.start
+                    assignments[de.endIndex] = e.end
+                }
+            }
+
+        } else {
+            for (i in 0..Random.nextInt(1, bound)) {
+                val emptyVertices = assignments.withIndex().filter { it.value == null }.map { it.index }
+                val vertex = emptyVertices.random()
+                val point = holeVertices.random()
+                holeVertices -= point
+                assignments[vertex] = point
+            }
         }
+
         val possiblePoints = MutableList(vertexAmount) { i ->
             val assigment = assignments[i]
             when {
@@ -347,7 +362,7 @@ class OtherDummySolver(
         }
         return VertexCtx(
             possiblePoints.toPersistentList(),
-            assignments.toPersistentList(),
+            MutableList(vertexAmount) { null }.toPersistentList(),
             (0 until vertexAmount).toPersistentSet()
         )
     }
