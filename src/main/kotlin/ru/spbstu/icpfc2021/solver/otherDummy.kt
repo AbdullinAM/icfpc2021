@@ -338,7 +338,7 @@ class OtherDummySolver(
             val assigment = assignments[i]
             when {
                 assigment != null -> setOf(assigment)
-                else -> randomlyReducePointSet(allHolePoints, Random.nextDouble(0.1, 1.0))
+                else -> allHolePoints//randomlyReducePointSet(allHolePoints, Random.nextDouble(0.1, 1.0))
             }
         }
         return VertexCtx(
@@ -410,8 +410,6 @@ class OtherDummySolver(
         }
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
-            println("Assignments: ${ctx.assigment}")
-            println("Current $vid")
             overlays.clear()
             for (possiblePoint in currentVertexPossiblePoints) {
                 overlays += Drawable.Shape(Ellipse2D(possiblePoint, 0.5)) to Color.PINK.darker().darker()
