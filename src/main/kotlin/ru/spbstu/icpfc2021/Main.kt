@@ -5,6 +5,7 @@ import ru.spbstu.icpfc2021.model.Verifier
 import ru.spbstu.icpfc2021.model.readProblem
 import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.icpfc2021.solver.OtherDummySolver
+import ru.spbstu.icpfc2021.solver.SolverMode
 import java.io.File
 
 fun main(args: Array<String>) {
@@ -17,7 +18,8 @@ fun main(args: Array<String>) {
         Verifier(problem).getHolePoints().toSet(),
         problem,
         findAllSolutions = false,
-        showGraphics = true
+        showGraphics = true,
+        mode = SolverMode.RANDOM
     )
     val figure = solver.solve()
 
