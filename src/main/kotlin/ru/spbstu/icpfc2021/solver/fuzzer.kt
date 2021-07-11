@@ -174,8 +174,13 @@ class fuzzer(
     }
 
     fun fuzz() {
-        val numPoints = (Random.nextInt(minOf(2, currentFigure.vertices.size)) + 1)
-        val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random()).shuffled()
+        val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
+        val seed: Int
+        if (invalidityMode) {
+            val invalidPoints = verifier.getInvalidEdges(currentFigure).flatMapTo(mutableSetOf()) { listOf(it.startIndex, it.endIndex) }
+            seed = invalidPoints.random()
+        } else seed = currentFigure.vertices.indices.random()
+        val randomPoints = randomPoints(numPoints, seed).shuffled()
         println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(randomPoints).map { newPoint ->
             currentFigure.run {
