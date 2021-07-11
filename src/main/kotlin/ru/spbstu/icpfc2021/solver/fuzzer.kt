@@ -173,6 +173,8 @@ class fuzzer(
         }
     }
 
+    var totalBestScore: Long = Long.MAX_VALUE
+
     fun fuzz() {
         val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
         val seed: Int
@@ -191,7 +193,7 @@ class fuzzer(
                 copy(vertices = acc)
             }
         }
-        val baseline = dislikes(problem.hole, currentFigure.currentPose) + verifier.countInvalidEdges(currentFigure)
+        totalBestScore = minOf(totalBestScore, dislikes(problem.hole, currentFigure.currentPose) + verifier.countInvalidEdges(currentFigure))
         var bestSol = candidates.map {
             it to (dislikes(problem.hole, it.currentPose) + verifier.countInvalidEdges(it))
         }.minByOrNull { it.second }
@@ -202,9 +204,9 @@ class fuzzer(
         }
         when {
             bestSol == null -> println("No solutions found =(")
-            bestSol.second > baseline -> {
+            bestSol.second > totalBestScore -> {
                 println("Cannot improve current solution")
-                if(!strictlyLowerDislikes && bestSol.second.toDouble() - baseline < baseline/20.0) {
+                if(!strictlyLowerDislikes && bestSol.second.toDouble() - totalBestScore < totalBestScore/20.0) {
                     currentFigure = bestSol.first
                     println(currentFigure.currentPose.toJsonString())
                 }
