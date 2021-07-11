@@ -572,12 +572,12 @@ class OtherDummySolver(
             compareBy<Map.Entry<Point, *>> { (key, _) ->
                 (key in holeVertices).toInt()
             }
-//                .thenBy { (key, _) ->
-//                    -(currentTarget?.let {
-//                        key.distance(it.to2D())
-//                    } ?: 0.0)
-//
-//                }
+                .thenBy { (key, _) ->
+                    -(currentTarget?.let {
+                        key.distance(it.to2D())
+                    } ?: 0.0)
+
+                }
 //            .thenBy {
 //                validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
 //            }
