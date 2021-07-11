@@ -54,7 +54,7 @@ class HoleFitter(val problem: Problem) {
 
         val res = mutableListOf<List<Pair<DataEdge, Edge>>>()
 
-        val paths = mutableSetOf<LinkedHashSet<DataEdge>>()
+        val paths = mutableSetOf<List<DataEdge>>()
 
         var step = holeEdges.size
         val limit = 3
@@ -64,7 +64,7 @@ class HoleFitter(val problem: Problem) {
             findPath(currPiece, matchingEdges, linkedSetOf(), paths)
 
             if (paths.isNotEmpty()) {
-                val goodPath = paths.random()
+                val goodPath = paths.maxByOrNull { it.size }!!
                 matchingEdges.values.forEach { it.removeAll(goodPath) }
                 paths.clear()
 
@@ -78,7 +78,7 @@ class HoleFitter(val problem: Problem) {
                     findPath(holeEdges.subList(curr, next), matchingEdges, linkedSetOf(), paths)
 
                     if (paths.isNotEmpty()) {
-                        val goodPath = paths.random()
+                        val goodPath = paths.maxByOrNull { it.size }!!
                         matchingEdges.values.forEach { it.removeAll(goodPath) }
                         paths.clear()
 
@@ -106,10 +106,10 @@ class HoleFitter(val problem: Problem) {
         holeEdges: List<Edge>,
         matchingEdges: Map<Edge, Set<DataEdge>>,
         path: LinkedHashSet<DataEdge>,
-        paths: MutableSet<LinkedHashSet<DataEdge>>
+        paths: MutableSet<List<DataEdge>>
     ) {
         if (holeEdges.isEmpty()) {
-            paths.add(path)
+            paths.add(path.toList())
             return
         }
 
