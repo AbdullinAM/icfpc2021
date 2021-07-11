@@ -195,7 +195,11 @@ class fuzzer(
         var bestSol = candidates.map {
             it to (dislikes(problem.hole, it.currentPose) + verifier.countInvalidEdges(it))
         }.minByOrNull { it.second }
-        bestSol = if (bestSol != null && verifier.check(bestSol.first) == Verifier.Status.OK) bestSol else null
+        bestSol = when {
+            invalidityMode -> bestSol
+            bestSol != null && verifier.check(bestSol.first) == Verifier.Status.OK -> bestSol
+            else -> null
+        }
         when {
             bestSol == null -> println("No solutions found =(")
             bestSol.second > baseline -> {
