@@ -28,11 +28,13 @@ class Verifier(val problem: Problem) {
         awtHole.sides().toList()
     }
 
-    fun check(edge: Edge): Boolean {
+
+
+    fun check(edge: Edge): Status {
         val awtLine = Line2D.Double(edge.start, edge.end)
 
         if (hasIntersections(holeSides, awtLine))
-            return true
+            return Status.EDGE_VIOLATION
 
         for (c in midPointCoeffs) {
             val midPoint = Point2D.Double(
@@ -41,10 +43,10 @@ class Verifier(val problem: Problem) {
             )
 
             if (isOutOfBounds(midPoint))
-                return true
+                return Status.EDGE_VIOLATION
         }
 
-        return false
+        return Status.OK
     }
 
     fun check(figure: Figure): Status {

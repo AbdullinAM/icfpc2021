@@ -2,17 +2,17 @@ package ru.spbstu.icpfc2021.solver
 
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toPersistentList
 import ru.spbstu.icpfc2021.gui.drawFigure
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.MapToSet
-import ru.spbstu.wheels.ints
 import java.io.File
 import java.lang.Math.pow
 import java.math.BigInteger
-import javax.xml.crypto.Data
-import kotlin.math.*
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 fun <T> List<Set<T>>.cartesian(): MutableList<PersistentList<T>> =
@@ -103,7 +103,7 @@ class fuzzer(
             val neighbor = currentFigure.vertices[it.oppositeVertex(pi)]
             val candidates = abstractSquares[el]!!.mapTo(mutableSetOf()) { neighbor + it }
             candidates.retainAll { it in holePoints }
-            candidates.retainAll { !verifier.check(Edge(it, neighbor)) }
+            candidates.retainAll { verifier.check(Edge(it, neighbor)) == Verifier.Status.OK }
             candidates.removeAll { it == currentPos }
             candidates
         }.intersectAll()
@@ -143,7 +143,7 @@ class fuzzer(
                 val neighbor = currentFigure.vertices[it.oppositeVertex(pi)]
                 val candidates = abstractSquares[el]!!.mapTo(mutableSetOf()) { neighbor + it }
                 candidates.retainAll { it in holePoints }
-                candidates.retainAll { !verifier.check(Edge(it, neighbor)) }
+                candidates.retainAll { verifier.check(Edge(it, neighbor)) == Verifier.Status.OK }
                 candidates.removeAll { it == currentPos }
                 candidates
             }.intersectAll()
@@ -165,7 +165,7 @@ class fuzzer(
                 val ourStartIndex = pis.indexOf(edge.startIndex)
                 val ourEndIndex = pis.indexOf(edge.endIndex)
                 val calculated = Edge(solution[ourStartIndex], solution[ourEndIndex])
-                !verifier.check(calculated)
+                verifier.check(calculated) == Verifier.Status.OK
                         && calculated.squaredLength.big.millions in problem.distanceToMillionsRange(edge.calculateOriginal().squaredLength.big)
             }
         }
