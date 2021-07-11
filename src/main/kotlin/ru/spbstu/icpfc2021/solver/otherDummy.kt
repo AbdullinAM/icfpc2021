@@ -52,7 +52,8 @@ class OtherDummySolver(
     val showGraphics: Boolean = false,
     val mode: SolverMode = SolverMode.SINGLE,
     val sufflePossibleEntries: Boolean = true,
-    val optimizeFirstIteration: Boolean = true
+    val optimizeFirstIteration: Boolean = true,
+    val randomRollback: Boolean = true
 ) {
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
@@ -601,7 +602,7 @@ class OtherDummySolver(
                 return null to otkat - 1
             }
         }
-        val otkat = 1 + java.util.Random().nextInt(10)
+        val otkat = 1 + if (randomRollback) java.util.Random().nextInt(10) else 0
         return null to otkat
     }
 
