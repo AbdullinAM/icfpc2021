@@ -19,7 +19,7 @@ fun main(args: Array<String>) {
         problem,
         findAllSolutions = false,
         showGraphics = true,
-        mode = SolverMode.RANDOM
+        mode = SolverMode.SINGLE
     )
     val figure = solver.solve()
 

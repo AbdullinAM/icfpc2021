@@ -44,7 +44,9 @@ class OtherDummySolver(
     val problem: Problem,
     val findAllSolutions: Boolean = false,
     val showGraphics: Boolean = false,
-    val mode: SolverMode = SolverMode.SINGLE
+    val mode: SolverMode = SolverMode.SINGLE,
+    val sufflePossibleEntries: Boolean = true,
+    val optimizeFirstIteration: Boolean = true
 ) {
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
@@ -54,9 +56,13 @@ class OtherDummySolver(
 
     private val solverIsRunning = AtomicBoolean(true)
 
-    fun Set<Int>.best(): Int? = minByOrNull { v ->
-        verticesToEdges[v].size// { it.calculate().squaredLength }
+    fun Set<Int>.randomBest(): Int? = randomOrNull()
+
+    fun Set<Int>.bestSmallestEdges(): Int? = minByOrNull {
+        verticesToEdges[it].size
     }
+
+    fun Set<Int>.best(): Int? = bestSmallestEdges()
 
     init {
 
@@ -228,7 +234,7 @@ class OtherDummySolver(
             var result: Figure? = previousSolution?.let { problem.figure.copy(vertices = it.vertices) }
             var tryIdx = 0
             while (tryIdx++ < retries) {
-                val score = result?.let { dislikes(problem.hole, it.currentPose)}
+                val score = result?.let { dislikes(problem.hole, it.currentPose) }
                 if (score != null && result != null && score == 0L) return result
                 println("Start try $tryIdx | ${score}}")
                 solverIsRunning.set(true)
@@ -319,11 +325,17 @@ class OtherDummySolver(
 
     private fun checkCanceled(): Boolean = !solverIsRunning.get()
 
+    var first = true
     fun searchVertex(vid: Int, ctx: VertexCtx): VertexCtx? {
         if (checkCanceled()) return null
         val allAbstractEdges = verticesToEdges[vid]
         val allConcreteGroups = mutableMapOf<Point, MutableMap<DataEdge, Set<Edge>>>()
-        val currentVertexPossiblePoints = ctx.possiblePoints[vid]
+        var currentVertexPossiblePoints = ctx.possiblePoints[vid]
+        // this is fucked up, but it really increases first iteration speed
+        if (first && optimizeFirstIteration) {
+            first = false
+            currentVertexPossiblePoints = currentVertexPossiblePoints.filter { it in problem.hole }.toSet()
+        }
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
             println("Assignments: ${ctx.assigment}")
@@ -368,11 +380,15 @@ class OtherDummySolver(
         val possibleConcreteGroups = allConcreteGroups.filterValues { edges -> edges.keys == allAbstractEdges }
         val validAssignments = ctx.assigment.filterNotNull()
         val holeVertices = problem.hole.toSet() - validAssignments
-        val possibleConcreteGroupsWithHolePriority = possibleConcreteGroups.entries.sortedWith(
-            compareBy<Map.Entry<Point, *>> { (it.key in holeVertices).toInt() }
-                .thenBy {
-                    validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
-                }.reversed()
+        val possibleConcreteGroupsWithHolePriority = when {
+            sufflePossibleEntries -> possibleConcreteGroups.entries.shuffled()
+            else -> possibleConcreteGroups.entries
+        }.sortedWith(
+            compareBy<Map.Entry<Point, *>> {
+                (it.key in holeVertices).toInt()
+            }.thenBy {
+                validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
+            }.reversed()
         )
         for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
             if (checkCanceled()) return null
