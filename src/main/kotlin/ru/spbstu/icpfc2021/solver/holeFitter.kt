@@ -61,7 +61,7 @@ class HoleFitter(val problem: Problem) {
 
         while (step > limit) {
             val currPiece = holeEdges.subList(0, step)
-            findPath(currPiece, matchingEdges, linkedSetOf(), paths)
+            findPath(currPiece, matchingEdges, mutableSetOf(), linkedSetOf(), paths)
 
             if (paths.isNotEmpty()) {
                 val goodPath = paths.maxByOrNull { it.size }!!
@@ -75,7 +75,7 @@ class HoleFitter(val problem: Problem) {
 
                 while (next <= holeEdges.size) {
                     val currPiece = holeEdges.subList(0, step)
-                    findPath(holeEdges.subList(curr, next), matchingEdges, linkedSetOf(), paths)
+                    findPath(holeEdges.subList(curr, next), matchingEdges, mutableSetOf(), linkedSetOf(), paths)
 
                     if (paths.isNotEmpty()) {
                         val goodPath = paths.maxByOrNull { it.size }!!
@@ -105,6 +105,7 @@ class HoleFitter(val problem: Problem) {
     fun findPath(
         holeEdges: List<Edge>,
         matchingEdges: Map<Edge, Set<DataEdge>>,
+        fixedVertexes: MutableSet<Int>,
         path: LinkedHashSet<DataEdge>,
         paths: MutableSet<List<DataEdge>>
     ) {
@@ -126,11 +127,21 @@ class HoleFitter(val problem: Problem) {
             val isOkTo = (path.lastOrNull()?.endIndex ?: to) == to
 
             if (isOkFrom || isOkTo) {
-                path.add(if (isOkFrom) matchingEdge else reverseMatchingEdge)
+                when {
+                    isOkFrom && from in fixedVertexes -> continue
+                    isOkTo && to in fixedVertexes -> continue
+                }
 
-                findPath(newHoleEdges, matchingEdges, path, paths)
+                val e = if (isOkFrom) matchingEdge else reverseMatchingEdge
+                val v = if (isOkFrom) from else to
 
-                path.remove(matchingEdge)
+                path.add(e)
+                fixedVertexes.add(v)
+
+                findPath(newHoleEdges, matchingEdges, fixedVertexes, path, paths)
+
+                path.remove(e)
+                fixedVertexes.remove(v)
             }
         }
 
