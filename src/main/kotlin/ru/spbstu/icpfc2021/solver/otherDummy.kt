@@ -56,7 +56,7 @@ class OtherDummySolver(
     val optimizeFirstIteration: Boolean = true,
     val useRandomOtkats: Boolean = false
 ) {
-    val timeout = Duration.minutes(5)
+    val timeout = Duration.minutes(10)
     val verifier = Verifier(problem)
     val canvas: TransformablePanel
     val overlays = ConcurrentHashMap<Drawable, Color>()
@@ -565,6 +565,9 @@ class OtherDummySolver(
         val holeVertices = problem.hole.toSet() - validAssignments
         val bonusVertices = problem.bonuses.orEmpty().toSet() - validAssignments
         val currentTarget = target.get()
+        val mostRemoteVertices = holeVertices.sortedByDescending { v ->
+            validAssignments.sumOf { it.distance(v.to2D()) }
+        }.take(5)
         val possibleConcreteGroupsWithHolePriority = when {
             sufflePossibleEntries -> possibleConcreteGroups.entries.shuffled()
             else -> possibleConcreteGroups.entries
@@ -578,6 +581,9 @@ class OtherDummySolver(
                     } ?: 0.0)
 
                 }
+                .thenBy { (key, _) ->
+                    -mostRemoteVertices.sumOf {v -> key.distance(v.to2D()) }
+                }
 //            .thenBy {
 //                validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
 //            }
@@ -587,7 +593,7 @@ class OtherDummySolver(
                 .reversed()
         )
 
-        val otkat = if (useRandomOtkats) 1 + java.util.Random().nextInt(10) else 0
+        val otkat = if (useRandomOtkats) 1 + java.util.Random().nextInt(5) else 0
         for ((vertexPoint, edges) in possibleConcreteGroupsWithHolePriority) {
             if (checkCanceled()) return null to 9999
             var newCtx = ctx
