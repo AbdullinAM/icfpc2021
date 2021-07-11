@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
 
         val res = hf.fit().toList()
 
-        if (res.isNotEmpty()) println("Problem ${problem.number}: $res")
+        if (res.isNotEmpty()) println("Problem ${problem.number}: ${res.size}")
 
         return
     }
@@ -29,7 +29,7 @@ fun main(args: Array<String>) {
 
         val res = hf.fit().toList()
 
-        if (res.isNotEmpty()) println("Problem ${problem.number}: $res")
+        if (res.isNotEmpty()) println("Problem ${problem.number}: ${res.size}")
     }
 }
 
@@ -59,52 +59,55 @@ class HoleFitter(val problem: Problem) {
             }
         }
 
-        var step = holeEdges.size
-        val limit = 3
+        for (start in holeEdges.indices) {
 
-        while (step > limit) {
-            val paths = mutableSetOf<List<DataEdge>>()
+            var step = holeEdges.size
+            val limit = 4
 
-            val matchingEdges = startingMatchingEdges.map { it.key to it.value.toMutableSet() }.toMutableMap()
-
-            val currPiece = holeEdges.subList(0, step)
-            findPath(currPiece, matchingEdges, mutableSetOf(), linkedSetOf(), paths)
-
-            if (paths.isNotEmpty()) {
-                val res = mutableListOf<Pair<DataEdge, Edge>>()
-                val fixedVertexes = mutableSetOf<Int>()
-
-                val goodPath = paths.maxByOrNull { it.size }!!
-                matchingEdges.values.forEach { it.removeAll(goodPath) }
-                paths.clear()
-
-                res += goodPath.zip(currPiece)
-                fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
-
-                var curr = step
+            while (step >= limit) {
+                var curr = start
                 var next = curr + step
 
-                while (next <= holeEdges.size) {
-                    val currPiece = holeEdges.subList(curr, next)
-                    findPath(currPiece, matchingEdges, fixedVertexes, linkedSetOf(), paths)
+                val paths = mutableSetOf<List<DataEdge>>()
 
-                    if (paths.isNotEmpty()) {
-                        val goodPath = paths.maxByOrNull { it.size }!!
-                        matchingEdges.values.forEach { it.removeAll(goodPath) }
-                        paths.clear()
+                val matchingEdges = startingMatchingEdges.map { it.key to it.value.toMutableSet() }.toMutableMap()
 
-                        res += goodPath.zip(currPiece)
-                        fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
+                val currPiece = (holeEdges + holeEdges).subList(curr, next)
+                findPath(currPiece, matchingEdges, mutableSetOf(), linkedSetOf(), paths)
+
+                if (paths.isNotEmpty()) {
+                    val res = mutableListOf<Pair<DataEdge, Edge>>()
+                    val fixedVertexes = mutableSetOf<Int>()
+
+                    val goodPath = paths.maxByOrNull { it.size }!!
+                    matchingEdges.values.forEach { it.removeAll(goodPath) }
+                    paths.clear()
+
+                    res += goodPath.zip(currPiece)
+                    fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
+
+                    while (curr < holeEdges.size) {
+                        val currPiece = (holeEdges + holeEdges).subList(curr, next)
+                        findPath(currPiece, matchingEdges, fixedVertexes, linkedSetOf(), paths)
+
+                        if (paths.isNotEmpty()) {
+                            val goodPath = paths.maxByOrNull { it.size }!!
+                            matchingEdges.values.forEach { it.removeAll(goodPath) }
+                            paths.clear()
+
+                            res += goodPath.zip(currPiece)
+                            fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
+                        }
+
+                        curr = next
+                        next = curr + step
                     }
 
-                    curr = next
-                    next = curr + step
+                    yield(res)
                 }
 
-                yield(res)
+                step -= 1
             }
-
-            step -= 1
         }
 
         return@sequence
