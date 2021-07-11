@@ -167,7 +167,7 @@ class fuzzer(
                 val ourStartIndex = pis.indexOf(edge.startIndex)
                 val ourEndIndex = pis.indexOf(edge.endIndex)
                 val calculated = Edge(solution[ourStartIndex], solution[ourEndIndex])
-                verifier.check(calculated) == Verifier.Status.OK
+                (invalidityMode || verifier.check(calculated) == Verifier.Status.OK)
                         && calculated.squaredLength.big.millions in problem.distanceToMillionsRange(edge.calculateOriginal().squaredLength.big)
             }
         }
@@ -178,7 +178,7 @@ class fuzzer(
         val seed: Int
         if (invalidityMode) {
             val invalidPoints = verifier.getInvalidEdges(currentFigure).flatMapTo(mutableSetOf()) { listOf(it.startIndex, it.endIndex) }
-            seed = invalidPoints.random()
+            seed = invalidPoints.takeUnless { it.isEmpty() }?.random() ?: currentFigure.vertices.indices.random()
         } else seed = currentFigure.vertices.indices.random()
         val randomPoints = randomPoints(numPoints, seed).shuffled()
         println("Fuzzer: picked points $randomPoints")
@@ -195,7 +195,11 @@ class fuzzer(
         var bestSol = candidates.map {
             it to (dislikes(problem.hole, it.currentPose) + verifier.countInvalidEdges(it))
         }.minByOrNull { it.second }
-        bestSol = if (bestSol != null && verifier.check(bestSol.first) == Verifier.Status.OK) bestSol else null
+        bestSol = when {
+            invalidityMode -> bestSol
+            bestSol != null && verifier.check(bestSol.first) == Verifier.Status.OK -> bestSol
+            else -> null
+        }
         when {
             bestSol == null -> println("No solutions found =(")
             bestSol.second > baseline -> {

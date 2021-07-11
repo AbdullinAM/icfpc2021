@@ -17,12 +17,17 @@ import java.math.BigInteger
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class Point(
-    val x: Int, val y: Int
+    @get:JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
+    val x: Int,
+    @get:JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
+    val y: Int
 ) : Point2D() {
     operator fun plus(other: Point) = Point(x + other.x, y + other.y)
     fun rotate90() = Point(y, -x)
 
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     override fun getX(): kotlin.Double = x.toDouble()
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     override fun getY(): kotlin.Double = y.toDouble()
 
     override fun setLocation(p0: kotlin.Double, p1: kotlin.Double) {
