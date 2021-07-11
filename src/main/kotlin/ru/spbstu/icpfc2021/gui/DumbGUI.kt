@@ -250,7 +250,7 @@ enum class CellState {
 
 data class Cell(var state: CellState, val x: Int, val y: Int)
 
-interface Drawable {
+fun interface Drawable {
     fun drawOn(graphics2D: Graphics2D)
 
     object Nil : Drawable {
@@ -331,6 +331,9 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
     )
     val holeVertices = hole.map { it.to2D() }
     var currentCoordinates: Point? = null
+
+    val overlays: MutableMap<String, Drawable> = mutableMapOf()
+
     val canvas = dumbCanvas {
         withPaint(Color.GRAY.brighter().brighter()) {
             val hole2D = GeneralPath()
@@ -388,6 +391,10 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
             withPaint(Color.BLACK) {
                 draw(Ellipse2D(b.position, 2.0))
             }
+        }
+
+        for (overlay in overlays.values) {
+            overlay.drawOn(this)
         }
 
         absolute {
@@ -488,6 +495,33 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
     }
     canvas.onKey(KeyStroke.getKeyStroke('-', 0)) {
         canvas.scale(0.9)
+    }
+    canvas.onKey("control P") {
+        val mouse = canvas.canvasMousePosition ?: return@onKey
+        val startPoint = figure.vertices.withIndex().minByOrNull { (_, v) -> v.distance(mouse) }?.value ?: return@onKey
+
+        val holeEdges = (problem.hole + problem.hole.first()).windowed(2).mapTo(mutableSetOf()) { (a, b) -> Edge(a, b) }
+
+        val ourIndex = figure.vertices.indexOf(startPoint)
+        val ourEdges = problem.figure.edges.filter { it.startIndex == ourIndex || it.endIndex == ourIndex }
+
+        val candidates = holeEdges.filter { he ->
+            ourEdges.any { e -> checkCorrect(figure.calculateEdge(e), he, problem.epsilon) }
+        }
+
+        var hedges by overlays
+
+        hedges = Drawable {
+            with(it) {
+                for (candidate in candidates) {
+                    withPaint(Color.GREEN) {
+                        drawLine(candidate.start, candidate.end)
+                    }
+                }
+            }
+        }
+
+        canvas.invokeRepaint()
     }
     canvas.onMouseWheel { e ->
         val rot = e.preciseWheelRotation

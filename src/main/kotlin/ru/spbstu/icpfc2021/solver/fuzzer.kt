@@ -40,11 +40,12 @@ class fuzzer(
     val constrainSearchSpace: Boolean = true,
     val strictlyLowerDislikes: Boolean = false,
     val maxVariantsPerSet: Int = 1000000,
-    val invalidityMode: Boolean = false
+    val invalidityMode: Boolean = false,
+    val explosionMode: Boolean
 ) {
 
     val verifier = Verifier(problem)
-    val holePoints = verifier.getHolePoints()
+    val holePoints = verifier.getHolePoints().toSet()
 
     val nodesToEdges: MapToSet<Int, DataEdge> = MapToSet()
     init {
@@ -175,6 +176,12 @@ class fuzzer(
 
     var totalBestScore: Long = Long.MAX_VALUE
 
+    fun calcScore(f: Figure) = when {
+        explosionMode -> 1000000 - f.vertices.expansiveness()
+        invalidityMode -> dislikes(problem.hole, f.currentPose) + verifier.countInvalidEdges(f)
+        else -> dislikes(problem.hole, f.currentPose)
+    }
+
     fun fuzz() {
         val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
         val seed: Int
@@ -193,10 +200,10 @@ class fuzzer(
                 copy(vertices = acc)
             }
         }
-        totalBestScore = minOf(totalBestScore, dislikes(problem.hole, currentFigure.currentPose) + verifier.countInvalidEdges(currentFigure))
+        totalBestScore = minOf(totalBestScore, calcScore(currentFigure))
 
         var bestSol = candidates.map {
-            it to (dislikes(problem.hole, it.currentPose) + verifier.countInvalidEdges(it))
+            it to calcScore(it)
         }.minByOrNull { it.second }
         bestSol = when {
             invalidityMode -> bestSol
@@ -235,7 +242,9 @@ fun main(args: Array<String>) {
 
     val fuzzer = fuzzer(problem, startFigure,
         strictlyLowerDislikes = args.contains("--strict"),
-        invalidityMode = args.contains("--invalid"))
+        invalidityMode = args.contains("--invalid"),
+        explosionMode = args.contains("--explode"),
+    )
     if (args.contains("--no-gui")) {
         while(true) {
             fuzzer.fuzz()

@@ -82,8 +82,10 @@ data class Figure(
     val vertices: List<Point>,
     val edges: List<DataEdge>
 ) {
+    fun calculateEdge(data: DataEdge): Edge = Edge(vertices[data.startIndex], vertices[data.endIndex])
+
     @get:JsonIgnore
-    val calculatedEdges by lazy { edges.map { Edge(vertices[it.startIndex], vertices[it.endIndex]) } }
+    val calculatedEdges by lazy { edges.map { calculateEdge(it) } }
 
     fun moveAll(dp: Point) = copy(vertices = vertices.map { it + dp })
     fun rotate90() = copy(vertices = vertices.map { it.rotate90() })
