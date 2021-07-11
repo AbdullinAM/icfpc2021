@@ -153,7 +153,7 @@ class fuzzer(
         if (constrainSearchSpace) {
             for (i in personalSets.indices) {
                 personalSets[i] = personalSets[i].shuffled().take(
-                    pow(1000000.0, 1.0 / pis.size).roundToInt()
+                    pow(10000000.0, 1.0 / pis.size).roundToInt()
                 ).toSet()
             }
         }
@@ -171,7 +171,7 @@ class fuzzer(
     }
 
     fun fuzz() {
-        val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
+        val numPoints = (Random.nextInt(minOf(20, currentFigure.vertices.size)) + 1)
         val randomPoints = randomPoints(numPoints, currentFigure.vertices.indices.random()).shuffled()
         println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(randomPoints).map { newPoint ->
