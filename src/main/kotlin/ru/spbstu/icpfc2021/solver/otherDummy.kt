@@ -6,6 +6,7 @@ import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentSet
 import ru.spbstu.icpfc2021.gui.*
 import ru.spbstu.icpfc2021.model.*
+import ru.spbstu.icpfc2021.result.saveInvalidResult
 import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.MapToSet
 import ru.spbstu.wheels.NullableMonad.filter
@@ -63,6 +64,7 @@ class OtherDummySolver(
     val validEdges = hashSetOf<Edge>()
     val target: AtomicReference<Point?> = AtomicReference(null)
     val leftAssignments = AtomicInteger(problem.figure.vertices.size)
+    val currentCtx: AtomicReference<VertexCtx?> = AtomicReference(null)
     lateinit var abstractSquares: Map<BigInteger, Set<Point>>
 
     private val solverIsRunning = AtomicBoolean(true)
@@ -158,6 +160,17 @@ class OtherDummySolver(
         canvas.onKey("RIGHT") {
             val tx = 20.0 / canvas.transform.scaleX
             canvas.translate(tx, 0.0)
+        }
+        canvas.onKey("control shift S") {
+            val ctx = currentCtx.get()
+            ctx?.let {
+                problem.figure.copy(vertices = problem.figure.vertices.withIndex().zip(it.assigment) { a, b ->
+                    if (b == null) it.possiblePoints[a.index].randomOrNull() ?: a.value
+                    else b
+                })
+            }?.let {
+                saveInvalidResult(problem, it)
+            }
         }
         canvas.onKey(KeyStroke.getKeyStroke('+', 0)) {
             canvas.scale(1.1)
@@ -520,6 +533,7 @@ class OtherDummySolver(
             currentVertexPossiblePoints = currentVertexPossiblePoints.filter { it: Point -> it in problem.hole }.toSet()
         }
         leftAssignments.set(problem.figure.vertices.size - ctx.assigment.filterNotNull().size)
+        currentCtx.set(ctx)
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
             overlays.clear()
@@ -580,9 +594,6 @@ class OtherDummySolver(
                         key.distance(it.to2D())
                     } ?: 0.0)
 
-                }
-                .thenBy { (key, _) ->
-                    -mostRemoteVertices.sumOf {v -> key.distance(v.to2D()) }
                 }
 //            .thenBy {
 //                validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }

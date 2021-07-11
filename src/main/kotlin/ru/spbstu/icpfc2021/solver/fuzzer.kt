@@ -234,7 +234,11 @@ fun main(args: Array<String>) {
     println("$index.problem")
     val problem = readProblem(index, problemJson)
     println(problem)
-    val solutionJson = File("solutions/$index.sol").readText()
+    val isInvalid = args.contains("--invalid")
+    val solutionJson =  when {
+        isInvalid -> File("solutions/$index.invalid.sol")
+        else -> File("solutions/$index.sol")
+    }.readText()
     val solution = readValue<Pose>(solutionJson)
     println("$index.sol")
 
