@@ -19,6 +19,7 @@ import java.math.BigInteger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JFrame
 import javax.swing.KeyStroke
@@ -61,6 +62,7 @@ class OtherDummySolver(
     val overlays = ConcurrentHashMap<Drawable, Color>()
     val validEdges = hashSetOf<Edge>()
     val target: AtomicReference<Point?> = AtomicReference(null)
+    val leftAssignments = AtomicInteger(problem.figure.vertices.size)
     lateinit var abstractSquares: Map<BigInteger, Set<Point>>
 
     private val solverIsRunning = AtomicBoolean(true)
@@ -127,6 +129,14 @@ class OtherDummySolver(
             for ((overlay, color) in overlays) {
                 withPaint(color) {
                     draw(overlay)
+                }
+            }
+
+            absolute {
+                withPaint(Color.ORANGE) {
+                    withFont(Font.decode("Fira-Mono-Bold-20")) {
+                        drawString("left assignments: ${leftAssignments.get()}", 20.0f, 30.0f)
+                    }
                 }
             }
 
@@ -509,6 +519,7 @@ class OtherDummySolver(
             firstIteration = false
             currentVertexPossiblePoints = currentVertexPossiblePoints.filter { it: Point -> it in problem.hole }.toSet()
         }
+        leftAssignments.set(problem.figure.vertices.size - ctx.assigment.filterNotNull().size)
         // THIS IS FOR NEW YEAR!!!!!!!!!
         if (showGraphics) {
             overlays.clear()
@@ -562,11 +573,11 @@ class OtherDummySolver(
                 (key in holeVertices).toInt()
             }
 //                .thenBy { (key, _) ->
-//                -(currentTarget?.let {
-//                    key.distance(it.to2D())
-//                } ?: 0.0)
-
-//            }
+//                    -(currentTarget?.let {
+//                        key.distance(it.to2D())
+//                    } ?: 0.0)
+//
+//                }
 //            .thenBy {
 //                validAssignments.sumOf { assignment -> Edge(it.key, assignment).squaredLength }
 //            }
