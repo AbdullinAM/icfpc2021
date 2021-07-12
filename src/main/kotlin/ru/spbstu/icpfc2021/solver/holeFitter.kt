@@ -1,6 +1,7 @@
 package ru.spbstu.icpfc2021.solver
 
 import ru.spbstu.icpfc2021.model.*
+import ru.spbstu.wheels.defaultCopy
 import ru.spbstu.wheels.toMutableMap
 import java.io.File
 
@@ -62,7 +63,7 @@ class HoleFitter(val problem: Problem) {
         for (start in holeEdges.indices) {
 
             var step = holeEdges.size
-            val limit = 4
+            val limit = 1
 
             while (step >= limit) {
                 var curr = start
@@ -85,11 +86,16 @@ class HoleFitter(val problem: Problem) {
 
                     res += goodPath.zip(currPiece)
                     fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
-
                     while (curr < holeEdges.size) {
-                        val currPiece = (holeEdges + holeEdges).subList(curr, next)
-                        findPath(currPiece, matchingEdges, fixedVertexes, linkedSetOf(), paths)
-
+                        var inner_step = step
+                        while (inner_step > limit) {
+                            val currPiece = (holeEdges + holeEdges).subList(curr, curr+inner_step)
+                            findPath(currPiece, matchingEdges, fixedVertexes, linkedSetOf(), paths)
+                            if(paths.isNotEmpty()){
+                                break
+                            }
+                            inner_step -= 1
+                        }
                         if (paths.isNotEmpty()) {
                             val goodPath = paths.maxByOrNull { it.size }!!
                             matchingEdges.values.forEach { it.removeAll(goodPath) }
@@ -97,8 +103,10 @@ class HoleFitter(val problem: Problem) {
 
                             res += goodPath.zip(currPiece)
                             fixedVertexes.addAll(goodPath.flatMap { listOf(it.startIndex, it.endIndex) })
+                            curr += inner_step
+                            next = curr + step
+                            continue
                         }
-
                         curr = next
                         next = curr + step
                     }
