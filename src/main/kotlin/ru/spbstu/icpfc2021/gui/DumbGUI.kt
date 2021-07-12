@@ -507,8 +507,10 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
         val ourIndex = figure.vertices.indexOf(startPoint)
         val ourEdges = problem.figure.edges.filter { it.startIndex == ourIndex || it.endIndex == ourIndex }
 
-        val candidates = holeEdges.filter { he ->
-            ourEdges.any { e -> checkCorrect(he, problem.figure.calculateEdge(e), problem.epsilon) }
+        val candidates = holeEdges.flatMap { he ->
+            ourEdges.filter { e ->
+                checkCorrect(he, problem.figure.calculateEdge(e), problem.epsilon)
+            }.map { it to he }
         }
 
         var hedges by overlays
@@ -518,7 +520,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
                 for (candidate in candidates) {
                     withPaint(Color.GREEN.darker().transparent().transparent().transparent()) {
                         //drawLine(candidate.start, candidate.end)
-                        val line = Line2D.Double(candidate.start, candidate.end)
+                        val line = Line2D.Double(candidate.second.start, candidate.second.end)
                         it.draw(Drawable.Shape(BasicStroke(0.8f).createStrokedShape(line)))
                     }
                 }
