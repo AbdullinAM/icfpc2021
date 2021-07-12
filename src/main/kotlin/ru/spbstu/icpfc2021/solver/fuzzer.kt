@@ -2,6 +2,9 @@ package ru.spbstu.icpfc2021.solver
 
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
+import ru.spbstu.icpfc2021.filterAsync
 import ru.spbstu.icpfc2021.gui.drawFigure
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.result.saveResult
@@ -125,7 +128,7 @@ class fuzzer(
         return listOf(seed) + pickNeighbours(no - 1, seed)
     }
 
-    fun multipointCandidates(pis: List<Int>): List<List<Point>> {
+    suspend fun multipointCandidates(scope: CoroutineScope, pis: List<Int>): List<List<Point>> {
         val pisToSet = pis.toSet()
 
         val innerEdges = pis.flatMapTo(mutableSetOf()) { nodesToEdges[it] }
@@ -163,7 +166,7 @@ class fuzzer(
         }
         val cart = personalSets.cartesian()
         println("cart size = ${cart.sumOf { it.size }}")
-        return cart.filter { solution ->
+        return cart.filterAsync(scope) { solution ->
             innerEdges.all { edge ->
                 val ourStartIndex = pis.indexOf(edge.startIndex)
                 val ourEndIndex = pis.indexOf(edge.endIndex)
@@ -178,20 +181,20 @@ class fuzzer(
 
     fun calcScore(f: Figure) = when {
         explosionMode -> 1000000 - f.vertices.expansiveness()
-        invalidityMode -> dislikes(problem.hole, f.currentPose) + verifier.countInvalidEdges(f)
+        invalidityMode -> /* dislikes(problem.hole, f.currentPose) + */ verifier.countInvalidEdges(f).toLong()
         else -> dislikes(problem.hole, f.currentPose)
     }
 
-    fun fuzz() {
-        val numPoints = (Random.nextInt(minOf(8, currentFigure.vertices.size)) + 1)
+    suspend fun fuzz(scope: CoroutineScope) {
+        val numPoints = (Random.nextInt(minOf(10, currentFigure.vertices.size)) + 1)
         val seed: Int
-        if (invalidityMode) {
+        if (invalidityMode && !explosionMode) {
             val invalidPoints = verifier.getInvalidEdges(currentFigure).flatMapTo(mutableSetOf()) { listOf(it.startIndex, it.endIndex) }
             seed = invalidPoints.takeUnless { it.isEmpty() }?.random() ?: currentFigure.vertices.indices.random()
         } else seed = currentFigure.vertices.indices.random()
         val randomPoints = randomPoints(numPoints, seed).shuffled()
         println("Fuzzer: picked points $randomPoints")
-        val candidates = multipointCandidates(randomPoints).map { newPoint ->
+        val candidates = multipointCandidates(scope, randomPoints).map { newPoint ->
             currentFigure.run {
                 val acc = vertices.toMutableList()
                 for ((ix, i) in randomPoints.withIndex()) {
@@ -228,7 +231,7 @@ class fuzzer(
 
 }
 
-fun main(args: Array<String>) {
+suspend fun main(args: Array<String>) = coroutineScope {
     val index = args[0].toInt()
     val problemJson = File("problems/$index.problem").readText()
     println("$index.problem")
@@ -248,23 +251,24 @@ fun main(args: Array<String>) {
         strictlyLowerDislikes = args.contains("--strict"),
         invalidityMode = args.contains("--invalid"),
         explosionMode = args.contains("--explode"),
+        constrainSearchSpace = true
     )
     if (args.contains("--no-gui")) {
         while(true) {
-            fuzzer.fuzz()
+            fuzzer.fuzz(this)
             saveResult(problem, fuzzer.currentFigure)
 
             if (fuzzer.totalBestScore == 0L) {
                 println("Guess, we're done here")
-                return
+                return@coroutineScope
             }
         }
-        return
+        return@coroutineScope
     }
     val gui = drawFigure(problem, startFigure)
     while(true) {
         //System.`in`.bufferedReader().readLine()
-        fuzzer.fuzz()
+        fuzzer.fuzz(this)
         gui.setFigure(fuzzer.currentFigure)
         gui.invokeRepaint()
 
@@ -272,7 +276,7 @@ fun main(args: Array<String>) {
 
         if (fuzzer.totalBestScore == 0L) {
             println("Guess, we're done here")
-            return
+            return@coroutineScope
         }
     }
 }
