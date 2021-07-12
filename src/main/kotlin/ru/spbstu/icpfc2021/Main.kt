@@ -1,5 +1,6 @@
 package ru.spbstu.icpfc2021
 
+import ru.spbstu.icpfc2021.gui.drawFigure
 import ru.spbstu.icpfc2021.model.Verifier
 import ru.spbstu.icpfc2021.model.readProblem
 import ru.spbstu.icpfc2021.result.saveResult
@@ -20,10 +21,11 @@ fun main(args: Array<String>) {
         showGraphics = true,
         mode = SolverMode.HOLE_FITTER,
         optimizeFirstIteration = false,
+        useRandomOtkats = false
     )
     val figure = solver.solve()
 
     saveResult(problem, figure)
-//    drawFigure(problem, figure)
+    drawFigure(problem, figure)
 //    drawFigure(problem)
 }

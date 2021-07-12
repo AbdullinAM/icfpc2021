@@ -3,18 +3,18 @@ package ru.spbstu.icpfc2021.result
 import ru.spbstu.icpfc2021.model.*
 import java.io.File
 
-fun saveResult(problem: Problem, figure: Figure): Boolean {
+fun saveResult(problem: Problem, figure: Figure, log: Boolean = true): Boolean {
     val verifier = Verifier(problem)
     when (verifier.check(figure)) {
         Verifier.Status.OVERLAP -> {
-            println("Edges are overlapping")
+            if (log) println("Edges are overlapping")
             return false
         }
         Verifier.Status.EDGE_VIOLATION -> {
-            println("Edges violated!")
+            if (log) println("Edges violated!")
             return false
         }
-        Verifier.Status.OK -> println("Verification successful")
+        Verifier.Status.OK -> if (log) println("Verification successful")
     }
 
     val resultFile = File("solutions/${problem.number}.sol").also {
@@ -23,20 +23,20 @@ fun saveResult(problem: Problem, figure: Figure): Boolean {
     val previousSolution = try {
         readValue<Pose>(resultFile)
     } catch (e: Throwable) {
-        println("Could not read previous solution: ${e.message}")
+        if (log) println("Could not read previous solution: ${e.message}")
         null
     }
 
     val currentPose = figure.currentPose
     val currentDislikes = dislikes(problem.hole, currentPose)
     val previousDislikes = previousSolution?.let { dislikes(problem.hole, it) } ?: Long.MAX_VALUE
-    if (currentDislikes < previousDislikes) {
+    return if (currentDislikes < previousDislikes) {
         resultFile.writeText(currentPose.toJsonString())
-        println("Solution saved")
-        return true
+        println("New solution with score ${currentDislikes} saved")
+        true
     } else {
-        println("Current solution is worse than existing solution")
-        return false
+        if (log) println("Current solution is worse than existing solution")
+        false
     }
 }
 

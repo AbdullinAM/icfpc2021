@@ -155,7 +155,7 @@ class fuzzer(
             }.intersectAll()
         }
 
-        println("personalSets size = ${personalSets.map { it.size }}")
+//        println("personalSets size = ${personalSets.map { it.size }}")
         if (personalSets.any { it.isEmpty() }) return emptyList()
         if (constrainSearchSpace) {
             for (i in personalSets.indices) {
@@ -165,7 +165,7 @@ class fuzzer(
             }
         }
         val cart = personalSets.cartesian()
-        println("cart size = ${cart.sumOf { it.size }}")
+//        println("cart size = ${cart.sumOf { it.size }}")
         return cart.filterAsync(scope) { solution ->
             innerEdges.all { edge ->
                 val ourStartIndex = pis.indexOf(edge.startIndex)
@@ -188,12 +188,12 @@ class fuzzer(
     suspend fun fuzz(scope: CoroutineScope) {
         val numPoints = (Random.nextInt(minOf(10, currentFigure.vertices.size)) + 1)
         val seed: Int
-        if (invalidityMode && !explosionMode) {
+        if (invalidityMode) {
             val invalidPoints = verifier.getInvalidEdges(currentFigure).flatMapTo(mutableSetOf()) { listOf(it.startIndex, it.endIndex) }
             seed = invalidPoints.takeUnless { it.isEmpty() }?.random() ?: currentFigure.vertices.indices.random()
         } else seed = currentFigure.vertices.indices.random()
         val randomPoints = randomPoints(numPoints, seed).shuffled()
-        println("Fuzzer: picked points $randomPoints")
+//        println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(scope, randomPoints).map { newPoint ->
             currentFigure.run {
                 val acc = vertices.toMutableList()
@@ -214,17 +214,17 @@ class fuzzer(
             else -> null
         }
         when {
-            bestSol == null -> println("No solutions found =(")
+            bestSol == null -> {}//println("No solutions found =(")
             bestSol.second > totalBestScore -> {
-                println("Cannot improve current solution")
+//                println("Cannot improve current solution")
                 if(!strictlyLowerDislikes && bestSol.second.toDouble() - totalBestScore < totalBestScore/10.0) {
                     currentFigure = bestSol.first
-                    println(currentFigure.currentPose.toJsonString())
+//                    println(currentFigure.currentPose.toJsonString())
                 }
             }
             else -> {
                 currentFigure = bestSol.first
-                println(currentFigure.currentPose.toJsonString())
+//                println(currentFigure.currentPose.toJsonString())
             }
         }
     }
@@ -251,7 +251,6 @@ suspend fun main(args: Array<String>) = coroutineScope {
         strictlyLowerDislikes = args.contains("--strict"),
         invalidityMode = args.contains("--invalid"),
         explosionMode = args.contains("--explode"),
-        constrainSearchSpace = true
     )
     if (args.contains("--no-gui")) {
         while(true) {
