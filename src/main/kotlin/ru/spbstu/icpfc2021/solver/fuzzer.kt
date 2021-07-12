@@ -136,8 +136,8 @@ class fuzzer(
             it.startIndex in pisToSet && it.endIndex in pisToSet
         }
 
-        val personalSets: MutableList<Set<Point>> = pis.mapTo(mutableListOf()) { pi ->
-            if (currentFigure.vertices[pi].hasBonus()) return@mapTo setOf(currentFigure.vertices[pi])
+        val personalSets: MutableList<MutableSet<Point>> = pis.mapTo(mutableListOf()) { pi ->
+            if (currentFigure.vertices[pi].hasBonus()) return@mapTo mutableSetOf(currentFigure.vertices[pi])
             val dataEdges = nodesToEdges[pi]
 
             val currentPos = currentFigure.vertices[pi]
@@ -156,17 +156,47 @@ class fuzzer(
             }.intersectAll()
         }
 
-//        println("personalSets size = ${personalSets.map { it.size }}")
+        println("personalSets size = ${personalSets.map { it.size }}")
         if (personalSets.any { it.isEmpty() }) return emptyList()
+
+        val personalConstraints: MutableList<MutableSet<Point>?> = pis.mapTo(mutableListOf()) { null }
+
+        println("calculating constraints")
+        for ((ix, s) in personalSets.withIndex()) {
+            val pi = pis[ix]
+            val edges = innerEdges.filter { it.startIndex == pi || it.endIndex == pi }
+            for (edge in edges) {
+                val opi = edge.oppositeVertex(pi)
+                val reSet = abstractSquares[edge.calculateOriginal().squaredLength.big]
+                    .orEmpty()
+                    .flatMapTo(mutableSetOf()) { circle ->
+                    s.map { it + circle }
+                }
+                when(val existing = personalConstraints[pis.indexOf(opi)] ) {
+                    null -> personalConstraints[pis.indexOf(opi)] = reSet.toMutableSet()
+                    else -> existing.retainAll(reSet)
+                }
+            }
+        }
+
+        for ((ix, c) in personalConstraints.withIndex()) if (c != null) {
+            personalSets[ix].retainAll(c)
+        }
+        println("calculating constraints finished")
+
+        println("personalSets size = ${personalSets.map { it.size }}")
+
         if (constrainSearchSpace) {
             for (i in personalSets.indices) {
                 personalSets[i] = personalSets[i].shuffled().take(
                     pow(maxVariantsPerSet.toDouble(), 1.0 / pis.size).roundToInt()
-                ).toSet()
+                ).toMutableSet()
             }
         }
+        println("personalSets size = ${personalSets.map { it.size }}")
+
         val cart = personalSets.cartesian()
-//        println("cart size = ${cart.sumOf { it.size }}")
+        println("cart size = ${cart.sumOf { it.size }}")
         return cart.filterAsync(scope) { solution ->
             innerEdges.all { edge ->
                 val ourStartIndex = pis.indexOf(edge.startIndex)
@@ -197,7 +227,7 @@ class fuzzer(
             seed = invalidPoints.takeUnless { it.isEmpty() }?.random() ?: currentFigure.vertices.indices.random()
         } else seed = currentFigure.vertices.indices.random()
         val randomPoints = randomPoints(numPoints, seed).shuffled()
-//        println("Fuzzer: picked points $randomPoints")
+        println("Fuzzer: picked points $randomPoints")
         val candidates = multipointCandidates(scope, randomPoints).map { newPoint ->
             currentFigure.run {
                 val acc = vertices.toMutableList()
@@ -220,7 +250,7 @@ class fuzzer(
         when {
             bestSol == null -> {}//println("No solutions found =(")
             bestSol.second > totalBestScore -> {
-//                println("Cannot improve current solution")
+                println("Cannot improve current solution")
                 if(!strictlyLowerDislikes && bestSol.second.toDouble() - totalBestScore < totalBestScore/10.0) {
                     currentFigure = bestSol.first
 //                    println(currentFigure.currentPose.toJsonString())
@@ -254,7 +284,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
     val fuzzer = fuzzer(problem, startFigure,
         strictlyLowerDislikes = args.contains("--strict"),
         invalidityMode = args.contains("--invalid"),
-        explosionMode = args.contains("--explode"),
+        explosionMode = args.contains("--explode")
     )
     if (args.contains("--no-gui")) {
         while(true) {
