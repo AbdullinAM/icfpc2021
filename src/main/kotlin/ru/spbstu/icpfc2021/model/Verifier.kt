@@ -1,6 +1,8 @@
 package ru.spbstu.icpfc2021.model
 
+import ru.spbstu.icpfc2021.gui.Point2D
 import ru.spbstu.icpfc2021.gui.center
+import ru.spbstu.wheels.product
 import java.awt.Polygon
 import java.awt.Rectangle
 import java.awt.geom.*
@@ -141,7 +143,8 @@ fun List<Point>.bounds(): Rectangle2D {
 fun List<Point>.expansiveness(): Long {
     if (isEmpty()) return 0
     val center = bounds().center
-    return sumOf { Point2D.distance(it.getX(), it.getY(), center.x, center.y).toLong() }
+    return map { Point2D.distance(it.getX(), it.getY(), center.x, center.y).toLong() }.run { sum() + 10 * minOrNull()!! }
+    //return this.product(this) { a, b -> Point2D.distance(a.getX(), a.getY(), b.getX(), b.getY()).toLong() }.sum()
 }
 
 fun Polygon.sides(): Sequence<Line2D.Double> = sequence {

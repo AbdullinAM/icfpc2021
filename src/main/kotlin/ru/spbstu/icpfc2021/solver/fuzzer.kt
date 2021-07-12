@@ -5,10 +5,12 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import ru.spbstu.icpfc2021.filterAsync
-import ru.spbstu.icpfc2021.gui.drawFigure
+import ru.spbstu.icpfc2021.gui.*
 import ru.spbstu.icpfc2021.model.*
 import ru.spbstu.icpfc2021.result.saveResult
 import ru.spbstu.wheels.MapToSet
+import java.awt.Color
+import java.awt.Font
 import java.io.File
 import java.lang.Math.pow
 import java.math.BigInteger
@@ -99,21 +101,6 @@ class fuzzer(
     fun DataEdge.calculateOriginal() = Edge(problem.figure.vertices[startIndex], problem.figure.vertices[endIndex])
     fun DataEdge.calculateCurrent() = Edge(currentFigure.vertices[startIndex], currentFigure.vertices[endIndex])
 
-    fun onePointCandidates(pi: Int): Set<Point> {
-        val dataEdges = nodesToEdges[pi]
-
-        val currentPos = currentFigure.vertices[pi]
-        return dataEdges.map {
-            val el = it.calculateOriginal().squaredLength.big
-            val neighbor = currentFigure.vertices[it.oppositeVertex(pi)]
-            val candidates = abstractSquares[el]!!.mapTo(mutableSetOf()) { neighbor + it }
-            candidates.retainAll { it in holePoints }
-            candidates.retainAll { verifier.check(Edge(it, neighbor)) == Verifier.Status.OK }
-            candidates.removeAll { it == currentPos }
-            candidates
-        }.intersectAll()
-    }
-
     fun pickNeighbours(no: Int, seed: Int, res: MutableSet<Int> = mutableSetOf()): Set<Int> {
         val edges = nodesToEdges[seed]
         res += edges.shuffled().map { it.oppositeVertex(seed) }.take(no - res.size)
@@ -148,43 +135,47 @@ class fuzzer(
                 val el = it.calculateOriginal().squaredLength.big
                 val neighbor = currentFigure.vertices[it.oppositeVertex(pi)]
                 val candidates = abstractSquares[el]!!.mapTo(mutableSetOf()) { neighbor + it }
-                candidates.retainAll { it in holePoints }
-                if (!invalidityMode)
+                if (!explosionMode)
+                    candidates.retainAll { it in holePoints }
+                if (!invalidityMode && !explosionMode)
                     candidates.retainAll { verifier.check(Edge(it, neighbor)) == Verifier.Status.OK }
                 candidates.removeAll { it == currentPos }
                 candidates
             }.intersectAll()
         }
 
+
+
         println("personalSets size = ${personalSets.map { it.size }}")
         if (personalSets.any { it.isEmpty() }) return emptyList()
 
         val personalConstraints: MutableList<MutableSet<Point>?> = pis.mapTo(mutableListOf()) { null }
-
-        println("calculating constraints")
-        for ((ix, s) in personalSets.withIndex()) {
-            val pi = pis[ix]
-            val edges = innerEdges.filter { it.startIndex == pi || it.endIndex == pi }
-            for (edge in edges) {
-                val opi = edge.oppositeVertex(pi)
-                val reSet = abstractSquares[edge.calculateOriginal().squaredLength.big]
-                    .orEmpty()
-                    .flatMapTo(mutableSetOf()) { circle ->
-                    s.map { it + circle }
-                }
-                when(val existing = personalConstraints[pis.indexOf(opi)] ) {
-                    null -> personalConstraints[pis.indexOf(opi)] = reSet.toMutableSet()
-                    else -> existing.retainAll(reSet)
+        repeat(2) {
+            println("calculating constraints")
+            for ((ix, s) in personalSets.withIndex()) {
+                val pi = pis[ix]
+                val edges = innerEdges.filter { it.startIndex == pi || it.endIndex == pi }
+                for (edge in edges) {
+                    val opi = edge.oppositeVertex(pi)
+                    val reSet = abstractSquares[edge.calculateOriginal().squaredLength.big]
+                        .orEmpty()
+                        .flatMapTo(mutableSetOf()) { circle ->
+                            s.map { it + circle }
+                        }
+                    when(val existing = personalConstraints[pis.indexOf(opi)] ) {
+                        null -> personalConstraints[pis.indexOf(opi)] = reSet.toMutableSet()
+                        else -> existing.retainAll(reSet)
+                    }
                 }
             }
-        }
 
-        for ((ix, c) in personalConstraints.withIndex()) if (c != null) {
-            personalSets[ix].retainAll(c)
+            for ((ix, c) in personalConstraints.withIndex()) if (c != null) {
+                personalSets[ix].retainAll(c)
+            }
+            println("calculating constraints finished")
+            println("personalSets size = ${personalSets.map { it.size }}")
+            if (personalSets.any { it.isEmpty() }) return emptyList()
         }
-        println("calculating constraints finished")
-
-        println("personalSets size = ${personalSets.map { it.size }}")
 
         if (constrainSearchSpace) {
             for (i in personalSets.indices) {
@@ -202,7 +193,7 @@ class fuzzer(
                 val ourStartIndex = pis.indexOf(edge.startIndex)
                 val ourEndIndex = pis.indexOf(edge.endIndex)
                 val calculated = Edge(solution[ourStartIndex], solution[ourEndIndex])
-                (invalidityMode || verifier.check(calculated) == Verifier.Status.OK)
+                (invalidityMode || explosionMode || verifier.check(calculated) == Verifier.Status.OK)
                         && calculated.squaredLength.big.millions in problem.distanceToMillionsRange(edge.calculateOriginal().squaredLength.big)
             }
         }
@@ -211,7 +202,7 @@ class fuzzer(
     var totalBestScore: Long = Long.MAX_VALUE
 
     fun calcScore(f: Figure) = when {
-        explosionMode -> 1000000 - f.vertices.expansiveness()
+        explosionMode -> -f.vertices.expansiveness()
         invalidityMode -> /* dislikes(problem.hole, f.currentPose) + */ verifier.countInvalidEdges(f).toLong()
         else -> dislikes(problem.hole, f.currentPose)
     }
@@ -220,7 +211,7 @@ class fuzzer(
     fun Point.hasBonus() = this in bonusPoints
 
     suspend fun fuzz(scope: CoroutineScope) {
-        val numPoints = (Random.nextInt(minOf(10, currentFigure.vertices.size)) + 1)
+        val numPoints = (Random.nextInt(minOf(20, currentFigure.vertices.size)) + 1)
         val seed: Int
         if (invalidityMode) {
             val invalidPoints = verifier.getInvalidEdges(currentFigure).flatMapTo(mutableSetOf()) { listOf(it.startIndex, it.endIndex) }
@@ -243,7 +234,7 @@ class fuzzer(
             it to calcScore(it)
         }.minByOrNull { it.second }
         bestSol = when {
-            invalidityMode -> bestSol
+            invalidityMode || explosionMode -> bestSol
             bestSol != null && verifier.check(bestSol.first) == Verifier.Status.OK -> bestSol
             else -> null
         }
@@ -299,10 +290,21 @@ suspend fun main(args: Array<String>) = coroutineScope {
         return@coroutineScope
     }
     val gui = drawFigure(problem, startFigure)
+    var fuzzerScore by gui.overlays
+
     while(true) {
         //System.`in`.bufferedReader().readLine()
         fuzzer.fuzz(this)
         gui.setFigure(fuzzer.currentFigure)
+        fuzzerScore = Drawable {
+            absolute {
+                withPaint(Color.ORANGE) {
+                    withFont(Font.decode("Fira-Mono-Bold-20")) {
+                        drawString("Fuzzer score: ${fuzzer.totalBestScore}", 20.0f, 100.0f)
+                    }
+                }
+            }
+        }
         gui.invokeRepaint()
 
         saveResult(problem, fuzzer.currentFigure)

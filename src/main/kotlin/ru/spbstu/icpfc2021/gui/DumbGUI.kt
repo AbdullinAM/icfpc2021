@@ -254,26 +254,28 @@ enum class CellState {
 data class Cell(var state: CellState, val x: Int, val y: Int)
 
 fun interface Drawable {
-    fun drawOn(graphics2D: Graphics2D)
+    fun Graphics2D.drawOn()
 
     object Nil : Drawable {
-        override fun drawOn(graphics2D: Graphics2D) {}
+        override fun Graphics2D.drawOn() {}
     }
 
     data class Shape(val inner: java.awt.Shape) : Drawable {
-        override fun drawOn(graphics2D: Graphics2D) {
-            graphics2D.fill(inner)
+        override fun Graphics2D.drawOn() {
+            fill(inner)
         }
     }
 
     class Multi(vararg val inner: Drawable) : Drawable {
         constructor(vararg shapes: java.awt.Shape) : this(*shapes.map { Shape(it) }.toTypedArray<Drawable>())
 
-        override fun drawOn(graphics2D: Graphics2D) {
-            for (e in inner) e.drawOn(graphics2D)
+        override fun Graphics2D.drawOn() {
+            for (e in inner) e.drawOn(this)
         }
     }
 }
+
+fun Drawable.drawOn(g: Graphics2D) = with(g) { drawOn() }
 
 fun Graphics2D.draw(drawable: Drawable) = drawable.drawOn(this)
 fun GeneralPath.moveTo(point: Point2D) = moveTo(point.x, point.y)
@@ -304,7 +306,8 @@ fun Figure.rotate(theta: Double, around: Point = center()): Figure {
 
 data class GUIController(
     val figureStack: Stack<Figure>,
-    val canvas: TransformablePanel
+    val canvas: TransformablePanel,
+    val overlays: MutableMap<String, Drawable>
 ) {
     fun setFigure(figure: Figure){
         figureStack.push(figure)
@@ -527,13 +530,11 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
         var hedges by overlays
 
         hedges = Drawable {
-            with(it) {
-                for (candidate in candidates) {
-                    withPaint(Color.GREEN.darker().transparent().transparent().transparent()) {
-                        //drawLine(candidate.start, candidate.end)
-                        val line = Line2D.Double(candidate.second.start, candidate.second.end)
-                        it.draw(Drawable.Shape(BasicStroke(0.8f).createStrokedShape(line)))
-                    }
+            for (candidate in candidates) {
+                withPaint(Color.GREEN.darker().transparent().transparent().transparent()) {
+                    //drawLine(candidate.start, candidate.end)
+                    val line = Line2D.Double(candidate.second.start, candidate.second.end)
+                    draw(Drawable.Shape(BasicStroke(0.8f).createStrokedShape(line)))
                 }
             }
         }
@@ -598,7 +599,7 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
 
     }
     dumbFrame(canvas, "TASK# ${problem.number}").defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-    return GUIController(figureStack, canvas)
+    return GUIController(figureStack, canvas, overlays)
 }
 
 
