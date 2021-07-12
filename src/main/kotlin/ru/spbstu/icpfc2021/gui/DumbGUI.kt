@@ -346,6 +346,12 @@ fun drawFigure(problem: Problem, initialFigure: Figure? = null): GUIController {
             fill(hole2D)
         }
 
+        withPaint(Color.GRAY.brighter()) {
+            for (hp in holeVertices) {
+                fill(Ellipse2D(hp, 1.0))
+            }
+        }
+
         val graphEdges = figure.calculatedEdges
 
         for ((point, ratio) in validPoints) {
