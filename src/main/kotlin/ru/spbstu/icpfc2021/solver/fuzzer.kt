@@ -137,6 +137,7 @@ class fuzzer(
         }
 
         val personalSets: MutableList<Set<Point>> = pis.mapTo(mutableListOf()) { pi ->
+            if (currentFigure.vertices[pi].hasBonus()) return@mapTo setOf(currentFigure.vertices[pi])
             val dataEdges = nodesToEdges[pi]
 
             val currentPos = currentFigure.vertices[pi]
@@ -184,6 +185,9 @@ class fuzzer(
         invalidityMode -> /* dislikes(problem.hole, f.currentPose) + */ verifier.countInvalidEdges(f).toLong()
         else -> dislikes(problem.hole, f.currentPose)
     }
+
+    val bonusPoints =  problem.bonuses.orEmpty().mapTo(mutableSetOf()) { it.position }
+    fun Point.hasBonus() = this in bonusPoints
 
     suspend fun fuzz(scope: CoroutineScope) {
         val numPoints = (Random.nextInt(minOf(10, currentFigure.vertices.size)) + 1)
