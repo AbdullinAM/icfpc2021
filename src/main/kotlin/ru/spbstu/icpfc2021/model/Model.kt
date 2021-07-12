@@ -14,6 +14,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.Writer
 import java.math.BigInteger
+import kotlin.math.abs
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 data class Point(
@@ -27,6 +28,7 @@ data class Point(
 
     @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     override fun getX(): kotlin.Double = x.toDouble()
+
     @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     override fun getY(): kotlin.Double = y.toDouble()
 
@@ -74,6 +76,15 @@ fun checkCorrect(from: Edge, to: Edge, epsilon: Int): Boolean {
 fun checkCorrect(from: Figure, to: Figure, epsilon: Int) =
     zip(from.calculatedEdges, to.calculatedEdges).all { (a, b) -> checkCorrect(a, b, epsilon) }
 
+fun checkCorrectGlobalist(from: Figure, to: Figure, epsilon: Int): Boolean {
+    val edgeDeltas = zip(from.calculatedEdges, to.calculatedEdges)
+        .map { (f, t) -> f.squaredLength.toDouble() to t.squaredLength.toDouble() }
+        .map { (f, t) -> abs((t / f) - 1.0) }
+    val possibleDelta = from.edges.size * epsilon.toDouble() / 1_000_000
+    println("Globalist: ${edgeDeltas.sum()} <= $possibleDelta")
+    return edgeDeltas.sum() <= possibleDelta
+}
+
 typealias Hole = List<Point>
 
 enum class Axis { X, Y }
@@ -97,6 +108,9 @@ data class Figure(
     @get:JsonIgnore
     val currentPose
         get() = Pose(vertices, listOf())
+
+
+    fun currentPoseWithBonus(bonus: BonusUse) = Pose(vertices, listOf(bonus))
 }
 
 data class Problem(

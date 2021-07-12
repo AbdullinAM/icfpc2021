@@ -3,9 +3,9 @@ package ru.spbstu.icpfc2021.result
 import ru.spbstu.icpfc2021.model.*
 import java.io.File
 
-fun saveResult(problem: Problem, figure: Figure, log: Boolean = true): Boolean {
+fun saveResult(problem: Problem, figure: Figure, log: Boolean = true, bonus: BonusUse? = null): Boolean {
     val verifier = Verifier(problem)
-    when (verifier.check(figure)) {
+    when (verifier.check(figure, bonus != null && bonus.bonus == BonusType.GLOBALIST)) {
         Verifier.Status.OVERLAP -> {
             if (log) println("Edges are overlapping")
             return false
@@ -27,7 +27,7 @@ fun saveResult(problem: Problem, figure: Figure, log: Boolean = true): Boolean {
         null
     }
 
-    val currentPose = figure.currentPose
+    val currentPose = bonus?.let { figure.currentPoseWithBonus(it) } ?: figure.currentPose
     val currentDislikes = dislikes(problem.hole, currentPose)
     val previousDislikes = previousSolution?.let { dislikes(problem.hole, it) } ?: Long.MAX_VALUE
     return if (currentDislikes < previousDislikes) {

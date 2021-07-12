@@ -59,7 +59,7 @@ class Verifier(val problem: Problem) {
             check(to) != Status.OK || !checkCorrect(from, to, problem.epsilon)
         }.map { it.first }
 
-    fun check(figure: Figure): Status {
+    fun check(figure: Figure, useGlobalist: Boolean = false): Status {
         for (edge in figure.calculatedEdges) {
             val awtLine = Line2D.Double(edge.start, edge.end)
 
@@ -78,6 +78,7 @@ class Verifier(val problem: Problem) {
         }
 
         return when {
+            useGlobalist && checkCorrectGlobalist(problem.figure, figure, problem.epsilon) -> Status.OK
             !checkCorrect(problem.figure, figure, problem.epsilon) -> Status.EDGE_VIOLATION
             else -> Status.OK
         }
