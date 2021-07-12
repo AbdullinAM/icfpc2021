@@ -359,6 +359,8 @@ class OtherDummySolver(
                 val tryFig = problem.figure.copy(vertices = tryResult.assigment.filterNotNull())
                 if (saveResult(problem, tryFig) || result == null) {
                     result = tryFig
+                } else {
+                    saveInvalidResult(problem, tryFig)
                 }
             }
             result
