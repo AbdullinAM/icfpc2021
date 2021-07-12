@@ -1,5 +1,6 @@
 package ru.spbstu.icpfc2021
 
+import kotlinx.coroutines.coroutineScope
 import ru.spbstu.icpfc2021.model.Pose
 import ru.spbstu.icpfc2021.model.dislikes
 import ru.spbstu.icpfc2021.model.readProblem
@@ -29,7 +30,7 @@ private inline fun <reified T> Timer.withTimeout(duration: Duration, computation
 }
 
 @OptIn(ExperimentalTime::class)
-fun main(args: Array<String>) {
+suspend fun main(args: Array<String>) = coroutineScope {
     val startInclusive = args[0].toInt()
     val endExclusive = args[1].toInt()
     val defaultDuration = Duration.Companion.minutes(60)
@@ -58,7 +59,7 @@ fun main(args: Array<String>) {
         timer.withTimeout(timeout) {
             while (true) {
                 if (!fuzzerIsRunning.get()) return@withTimeout
-                fuzzer.fuzz()
+                fuzzer.fuzz(scope = this)
                 saveResult(problem, fuzzer.currentFigure, false)
 
                 if (fuzzer.totalBestScore == 0L) {
